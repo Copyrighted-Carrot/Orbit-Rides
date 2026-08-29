@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    .input {
+        outline: none !important;
+        transition: border cubic-bezier(.4, 0, .2, 1) 100ms;
+    }
+
+    .input:focus {
+        border-color: oklch(var(--p)) !important;
+    }
+}
+
+* {
+    /*noinspection CssUnresolvedCustomProperty*/
+    font-family: var(--font-geist-sans), sans-serif !important;
+}
+
+.my-toast-container {
+    --toastify-toast-bd-radius: 0.5rem;
+    --toastify-color-progress-light: oklch(var(--p)) !important;
+    --toastify-color-progress-dark: oklch(var(--p)) !important;
+    /*noinspection CssUnresolvedCustomProperty*/
+    --toastify-font-family: var(--font-geist-sans), sans-serif !important;
+}
+
+.Toastify__toast {
+    font-size: 0.875rem !important;
+}
+
+@media (min-width: 1024px) {
+    /* Make the time picker and its children divs in the customer dashboard small in height on desktop. */
+    .time-picker-container div {
+        height: 1.7rem !important;
+    }
+
+    .time-picker-container input {
+        height: 1.7rem !important;
+    }
+}
+
+.react-datepicker-wrapper,
+.react-datepicker__input-container,
+.react-datepicker__input-container input {
+    display: block;
+    width: 100%;
+}
+
+/* React datepicker styles. */
+.react-datepicker {
+    @apply !bg-transparent !overflow-hidden !rounded-box !border-0 !shadow-lg;
+}
+
+.react-datepicker-popper {
+    z-index: 999 !important;
+}
+
+.react-datepicker__month-container {
+    @apply !rounded-box;
+}
+
+.react-datepicker__header {
+    @apply !bg-base-300 !bg-opacity-10 !py-4 !backdrop-blur-2xl;
+}
+
+.react-datepicker__current-month {
+    @apply !text-white !drop-shadow-lg !font-bold !text-base;
+}
+
+.react-datepicker__day-names {
+    @apply !space-x-3 !text-base-content;
+}
+
+.react-datepicker__day-name {
+    @apply !text-white !drop-shadow-lg !text-sm !py-1;
+}
+
+.react-datepicker__triangle {
+    @apply !backdrop-blur-lg !opacity-10 !fill-base-300 !stroke-0;
+}
+
+.react-datepicker__navigation {
+    @apply !mt-2.5 !px-5;
+}
+
+.react-datepicker__navigation-icon::before {
+    @apply !border-white !drop-shadow-2xl;
+}
+
+.react-datepicker__day--keyboard-selected {
+    background-color: unset !important;
+}
+
+.react-datepicker__month {
+    @apply !bg-base-300 !m-0 !p-2;
+}
+
+.react-datepicker__day {
+    @apply !rounded-md !w-8 !h-8 !inline-flex !items-center !justify-center !text-sm !m-1;
+}
+
+.react-datepicker__day:not([aria-disabled="true"]) {
+    @apply text-base-content;
+}
+
+.react-datepicker__day:not([aria-disabled="false"]) {
+    @apply !text-gray-500 !font-thin;
+}
+
+.react-datepicker__day:hover:not([aria-disabled="true"]) {
+    @apply !bg-primary !brightness-125;
+}
+
+.react-datepicker__day--selected:not([aria-disabled="true"]),
+.react-datepicker__day--selected {
+    @apply !bg-primary !text-primary-content !font-bold;
+}
+
+.react-datepicker__day--in-range {
+    @apply !bg-primary !text-primary-content !font-bold;
+}
+
+.react-datepicker__day--in-range:hover,
+.react-datepicker__day--in-selecting-range:hover {
+    @apply !bg-primary;
+}
+
+.react-datepicker__day--in-selecting-range {
+    @apply !bg-primary !bg-opacity-40 !text-primary-content !font-bold;
+}
+
+#pickup-date:focus {
+    text-indent: 1rem;
+}
+
+.center-on-focus > span {
+    transition: margin-left 0.3s ease, transform 0.3s ease;
+}
+
+.center-on-focus:hover > span {
+    margin-left: 50%;
+    transform: translateX(-50%);
+}
+
+/* Border around the checked color option in the new-car page. */
+.border-on-check {
+    box-shadow: 0 0 0 2px transparent;
+    transition: box-shadow 0.3s ease;
+}
+
+.border-on-check:has(input:checked) {
+    box-shadow: 0 0 0 3px oklch(var(--p) / 1);
+}
+
+.swiper-button-prev,
+.swiper-button-next {
+    @apply !btn !btn-circle !btn-ghost scale-50 !text-white;
+}
+
+.swiper-button-disabled {
+    display: none;
+}
