@@ -106,7 +106,9 @@ NEEDS DECISION: single operator vs marketplace; request/manual/pay-at-pickup/onl
 
 Baseline: 877c140, Initial commit, main and locally cached origin/main. Its author AND committer are Copyrighted-Carrot <belindosamson@gmail.com>. No existing other local contributor identity was found. Git read operations required an exact command-scoped safe.directory due to Windows account ownership; no global trust exception was added.
 
-Current branch: audit/repository-review. Local checkpoint message: Document independent system audit and archive unused assets. Inspect git log/status for its exact hash and publication state. Author/committer were explicitly checked against the owner identity before checkpointing. No application-fix branches created. Hosted HEAD/settings/collaborators are unverified: noninteractive ls-remote fails because GitHub credentials are missing; account listing was empty. GitHub plugin was suggested but connection is unconfirmed. Fetch/reconcile before future push. No push, PR, collaborator change, bot or history rewrite has occurred.
+Current branch: audit/repository-review. Audit/cleanup checkpoint: 4591c0d, Document independent system audit and archive unused assets. Author and committer are Copyrighted-Carrot <belindosamson@gmail.com>; independent final review found no attribution or scope issues. No application-fix branches created.
+
+GitHub connection is now confirmed: authenticated login Copyrighted-Carrot, email belindosamson@gmail.com. However, Projects-013/Orbit-Rides returns 404 for repository/branch reads and is absent from accessible/installed repository lists. The connection has no installation listed for Projects-013. This may be missing repository/organization access or a stale remote URL; do not infer that the repository was deleted. Local Git still has no credential for this remote. Owner was asked to enable this repository for the connection or provide its current URL. Hosted HEAD/settings/collaborators remain unverified. Fetch/reconcile before any future push. No push, PR, collaborator change, bot or history rewrite has occurred.
 
 ## Testing status and limitations
 
@@ -124,11 +126,11 @@ Known regressions: no application behavior was changed; no runtime regression ob
 
 ## Work in progress, pending work and next actions
 
-Current milestone: audit/roadmap and local cleanup complete, with final documentation/hygiene verification. GitHub cleanup/publication is blocked on owner-account access, not completed remotely. No unfinished database or application mutation is in progress.
+Current milestone: audit/roadmap and local cleanup complete, with final documentation/hygiene verification. GitHub account connection is verified; cleanup/publication is blocked specifically on access to the target repository (or confirmation of its new URL), not completed remotely. No unfinished database or application mutation is in progress.
 
 Next:
 1. Discuss core operating/payment/time/fulfillment/tracking decisions and audit priorities.
-2. Authenticate existing owner GitHub account, verify remote branch/collaborator state, fetch/reconcile, then publish the reviewed cleanup branch with owner-only attribution.
+2. Enable Projects-013/Orbit-Rides for the GitHub connection or confirm the current repository URL. Then verify remote branch/collaborator state, fetch/reconcile and publish the reviewed cleanup branch with owner-only attribution. Do not change origin or create a replacement repository based on a guess.
 3. Obtain read-only Supabase schema/RLS/grants/Storage export and database/media backup; prepare isolated test data.
 4. Phase 0 dependency/schema stabilization and phase 1 security boundaries; then atomic booking, checkout, timeline/admin/customer, simplification, redesign and hardening per roadmap.
 5. Update this state with each approved change and real test result; preserve unresolved limitations rather than declaring all flows verified.

@@ -90,11 +90,11 @@ Retain the Next/Supabase foundation and useful components. Refactor the business
 - Commit only reviewed logical changes with precise messages, such as “Document system audit and archive unused assets.” Use only `Copyrighted-Carrot <belindosamson@gmail.com>` for author **and committer**. No assistant/co-author trailers, collaborators, bot identities or Actions are to be added.
 - Check author/committer and commit message before publishing. Use owner-owned pull requests if desired; merge attribution must preserve the owner identity. Do not force-push or remove old history as routine cleanup.
 - Removing tracked assets from a new commit removes them from the current tree, not from historical Git objects. History rewriting is a separate disruptive operation and has not been requested or performed.
-- Remote publication is pending owner-account authentication. Existing local `origin/main` equals baseline, but hosted HEAD has not been verified because remote access requires credentials. Fetch/reconcile before publishing; do not overwrite unseen remote work.
+- Owner-account identity is now verified through GitHub. Remote publication remains pending target-repository access: `Projects-013/Orbit-Rides` returns 404 and is absent from the connection's repository lists. Confirm its URL or enable the repository/organization connection, then fetch/reconcile before publishing; do not overwrite unseen remote work or guess a replacement remote.
 
 ## Immediate next actions
 
 1. Review this audit and decide operating model, payment path, rental time/turnaround, delivery and tracking scope.
-2. Authenticate GitHub using the owner's existing account and inspect current remote state before publishing the cleanup branch.
+2. Enable target-repository access in the existing owner GitHub connection, or confirm its current URL; inspect remote state before publishing the cleanup branch.
 3. Export live Supabase schema/policies/grants/Storage config and create isolated test data for phases 0–1.
 4. Implement the smallest security/booking foundation increment; update project state and attach real regression evidence before moving to redesign.
