@@ -1,0 +1,50 @@
+[
+  {
+    "case": "malformed requested date",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 0
+  },
+  {
+    "case": "unparseable requested date",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 0
+  },
+  {
+    "case": "reversed requested range",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 1
+  },
+  {
+    "case": "database read fails",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 1
+  },
+  {
+    "case": "visible overlapping booking",
+    "available": false,
+    "conflictingBookings": [
+      {
+        "id": 1,
+        "date_range": "Oct 28, 2026 - Oct 30, 2026",
+        "status": "confirmed"
+      }
+    ],
+    "databaseReads": 1
+  },
+  {
+    "case": "invalid stored booking date",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 1
+  },
+  {
+    "case": "same-day existing and requested range",
+    "available": true,
+    "conflictingBookings": [],
+    "databaseReads": 1
+  }
+]
