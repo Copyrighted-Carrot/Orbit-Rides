@@ -104,11 +104,15 @@ NEEDS DECISION: single operator vs marketplace; request/manual/pay-at-pickup/onl
 
 ## Git branches, commits and publication
 
-Baseline: 877c140, Initial commit, main and locally cached origin/main. Its author AND committer are Copyrighted-Carrot <belindosamson@gmail.com>. No existing other local contributor identity was found. Git read operations required an exact command-scoped safe.directory due to Windows account ownership; no global trust exception was added.
+Original audit baseline: 877c140, Initial commit. Its author AND committer are Copyrighted-Carrot <belindosamson@gmail.com>. No other local contributor identity was found. Git operations use an exact command-scoped safe.directory due to Windows account ownership; no global trust exception was added. The new remote main now contains the cleaned audited snapshot rather than the original baseline tree.
 
 Current branch: audit/repository-review. Audit/cleanup checkpoint: 4591c0d, Document independent system audit and archive unused assets. Author and committer are Copyrighted-Carrot <belindosamson@gmail.com>; independent final review found no attribution or scope issues. No application-fix branches created.
 
-GitHub connection is now confirmed: authenticated login Copyrighted-Carrot, email belindosamson@gmail.com. However, Projects-013/Orbit-Rides returns 404 for repository/branch reads and is absent from accessible/installed repository lists. The connection has no installation listed for Projects-013. This may be missing repository/organization access or a stale remote URL; do not infer that the repository was deleted. Local Git still has no credential for this remote. Owner was asked to enable this repository for the connection or provide its current URL. Hosted HEAD/settings/collaborators remain unverified. Fetch/reconcile before any future push. No push, PR, collaborator change, bot or history rewrite has occurred.
+The owner corrected the destination to https://github.com/Copyrighted-Carrot/Orbit-Rides on 28 October 2026. Local origin now uses that URL. GitHub and local Git authentication both identify Copyrighted-Carrot; the connected email is belindosamson@gmail.com. The earlier Projects-013 remote was stale and must not be used.
+
+Publication succeeded: the initially empty public repository received existing owner-authored history on main and audit/repository-review through an atomic push. Both refs were verified at d2e645a99759c344b5ae7cba3f0e835517c21691 before this documentation synchronization. GitHub maps all three published author/committer records to Copyrighted-Carrot. Independent remote-tree review confirmed 171 files, excluding the six archived assets, env files, node_modules/.next and provider handoffs. This synchronization is a documentation-only follow-up on the same two branches; inspect git log/remote refs for its exact final hash. No PR was needed for initial publication to an empty repository. No collaborator changes, bot identities, Actions or history rewrites occurred. Collaborator enumeration remains unavailable through the current connection; do not claim a full membership audit.
+
+GitHub accepted the retained 70.92 MiB hero video with a size warning. It remains in use and is a documented optimization/redesign decision; the archived unused assets remain only in historical commits and the local recovery folder.
 
 ## Testing status and limitations
 
@@ -126,11 +130,11 @@ Known regressions: no application behavior was changed; no runtime regression ob
 
 ## Work in progress, pending work and next actions
 
-Current milestone: audit/roadmap and local cleanup complete, with final documentation/hygiene verification. GitHub account connection is verified; cleanup/publication is blocked specifically on access to the target repository (or confirmation of its new URL), not completed remotely. No unfinished database or application mutation is in progress.
+Current milestone: audit/roadmap and repository cleanup complete and published to the correct GitHub repository, with owner-only commit attribution verified. Documentation is synchronized with publication. No unfinished database or application mutation is in progress. No implementation or redesign is approved by this publication.
 
 Next:
 1. Discuss core operating/payment/time/fulfillment/tracking decisions and audit priorities.
-2. Enable Projects-013/Orbit-Rides for the GitHub connection or confirm the current repository URL. Then verify remote branch/collaborator state, fetch/reconcile and publish the reviewed cleanup branch with owner-only attribution. Do not change origin or create a replacement repository based on a guess.
+2. Use short-lived topic branches from the published main for approved implementation; fetch/reconcile before each new branch. Never force-push over remote work and retain owner-only attribution.
 3. Obtain read-only Supabase schema/RLS/grants/Storage export and database/media backup; prepare isolated test data.
 4. Phase 0 dependency/schema stabilization and phase 1 security boundaries; then atomic booking, checkout, timeline/admin/customer, simplification, redesign and hardening per roadmap.
 5. Update this state with each approved change and real test result; preserve unresolved limitations rather than declaring all flows verified.
