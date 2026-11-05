@@ -1,6 +1,6 @@
 # Orbit Rides
 
-Orbit Rides is a car rental application with customer browsing and booking screens and an administrative fleet dashboard. It is undergoing a functional and security audit and is **not ready for real reservations or payments**.
+Orbit Rides is a single-operator car rental portfolio application undergoing controlled reconstruction. It is **not ready for real reservations or payments**. The new payment model is a clearly labelled demo simulation.
 
 Start with [project state](AGENT_STATE.md), the [system audit](docs/SYSTEM_AUDIT.md), and the [implementation roadmap](docs/ROADMAP.md). The audit documents which features work, which are simulated, and what must change before release.
 
@@ -15,7 +15,9 @@ Next.js App Router, React, TypeScript, Supabase Auth/Postgres/Storage, Tailwind 
 3. Supply a local `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for your development project. Optional settings include `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_OAUTH_REDIRECT_URL`, and the server-only `GROK_API_KEY` for Groq.
 4. Run `npm run lint`, `npm run typecheck`, and `npm run build`. Use `npm run dev` to start the development server.
 
-**Do not replay the supplied migrations against valuable data.** Migration 001 assumes missing base tables; migration 002 drops and rebuilds tables. Back up and reconcile the actual schema before any migration. Storage bucket policies are not included.
+The [clean database foundation](database/clean/README.md) is a separate, tested chain for an empty Supabase PostgreSQL 17 project. It includes authorized commands, row-level policies, reservation integrity, demo payment events and protected media validation. The legacy application is being integrated one feature chain at a time.
+
+**Do not replay `supabase/migrations` against valuable data.** Its migration 001 assumes missing base tables and 002 drops/rebuilds tables. Those files are historical artifacts, not the deployed ledger or the clean reconstruction path. Do not run `db push` from this legacy configuration. The historical Rental project and its external recovery copies must remain untouched.
 
 Build and lint success do not validate bookings, payments, permissions, or the hosted database. See the audit's explicit coverage and limitations.
 

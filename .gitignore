@@ -40,6 +40,20 @@ yarn-error.log*
 /test-results/
 /.cache/
 
+# Recovery copies, local credentials and working material stay outside Git
+/recovery/
+/recovery-*/
+*.dump
+*.backup
+*.pgpass
+*.protected.json
+/scratch/
+/agent-logs/
+/handoffs/
+/.claude/
+/CLAUDE.md
+/.codex/
+
 # vercel
 .vercel
 
