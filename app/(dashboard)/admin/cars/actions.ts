@@ -2,9 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { Car } from '@/lib/types/models';
+import type { TablesUpdate } from '@/database.types';
+import type { Car } from '@/lib/types/models';
 
-export async function updateCar(carId: number, updates: Partial<Car>) {
+export async function updateCar(carId: number, updates: TablesUpdate<'cars'>) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

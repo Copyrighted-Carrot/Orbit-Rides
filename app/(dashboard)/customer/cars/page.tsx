@@ -93,7 +93,6 @@ export default async function CustomerCarsPage({searchParams}: {
 
     // Fetch available cars (exclude archived, with fallback if column is missing)
     let carsData: Car[] | null = null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let carsError: { message?: string } | null = null;
 
     const carsResult = await supabase

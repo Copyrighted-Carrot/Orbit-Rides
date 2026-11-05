@@ -6,15 +6,14 @@ Start with [project state](AGENT_STATE.md), the [system audit](docs/SYSTEM_AUDIT
 
 ## Stack
 
-Next.js App Router, React, TypeScript, Supabase Auth/Postgres/Storage, Tailwind CSS/DaisyUI, Leaflet, FilePond, and Framer Motion. The checked-in checkout is a QR confirmation simulation. Stripe and Turnstile packages are present but are not integrated into the application.
+Next.js App Router, React, TypeScript, Supabase Auth/Postgres/Storage, Tailwind CSS/DaisyUI, Leaflet, FilePond, and Framer Motion. The checked-in checkout uses a QR simulation.
 
 ## Local development
 
-The current baseline was checked with Node 24.18.0 and npm 11.16.0. This records the audit environment, not a supported runtime policy. Dependency upgrades and a reproducible installation baseline are pending.
-
-1. Install dependencies using the committed lockfile. Resolve React prerelease/peer compatibility during stabilization; do not delete the lockfile to suppress errors.
-2. Supply a local `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Never commit secrets. Optional settings are `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_OAUTH_REDIRECT_URL`, and `GROK_API_KEY` (the last currently calls Groq).
-3. Run `npm run dev`. Validation commands are `npm run lint`, `npx tsc --noEmit --incremental false`, and `npm run build`.
+1. Use Node 24.22.2 LTS and its bundled npm 11.19.1. With nvm, run `nvm install` and `nvm use` from the repository root.
+2. Run `npm ci` to install the committed lockfile.
+3. Supply a local `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` for your development project. Optional settings include `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_OAUTH_REDIRECT_URL`, and the server-only `GROK_API_KEY` for Groq.
+4. Run `npm run lint`, `npm run typecheck`, and `npm run build`. Use `npm run dev` to start the development server.
 
 **Do not replay the supplied migrations against valuable data.** Migration 001 assumes missing base tables; migration 002 drops and rebuilds tables. Back up and reconcile the actual schema before any migration. Storage bucket policies are not included.
 

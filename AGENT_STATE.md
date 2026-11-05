@@ -1,5 +1,21 @@
 # Orbit Rides — current project state
 
+## Current rehabilitation checkpoint — 5 November 2026
+
+The approved direction is controlled reconstruction in a separate Supabase staging project. Rental is an untouched historical archive; its database and separate Storage recovery copies remain outside Git. Production Auth credentials, customer identities, legacy bookings and legacy payment sessions must not be imported into staging. The exact-production-restore gate has been replaced by a reproducible clean foundation with synthetic accounts and demo scenarios.
+
+Current branch: `reconstruction/clean-staging`. The permitted Git author and committer remain `Copyrighted-Carrot <belindosamson@gmail.com>` only.
+
+Runtime stabilization is verified with Node 24.22.2 / npm 11.19.1, Next 15.5.29 and React 19.2.9. A separate fresh installation passed `npm ci`, dependency resolution, lint, typecheck and production build. Production dependencies have no reported vulnerabilities at this checkpoint; the full audit retains six moderate development-tool advisories and no high/critical advisories. The required compatibility edits do not rehabilitate the legacy booking UI.
+
+The clean database foundation and account integration are being verified separately. The foundation is not yet signed off: actual Storage testing identified missing image-content validation and an upload/cleanup race that must be corrected. The normal application configuration has not been switched to staging. No major visual redesign is authorized before functional and cross-feature verification.
+
+Each retained feature must have one authoritative state source, an authorized command boundary, a canonical read path, retry/failure semantics, and consistent dependent views. Pricing uses started 24-hour periods, a configurable ten-minute hold and two-hour turnaround. Payment is explicitly a demo simulation; scan/read operations are not payment evidence. Financial penalties, refunds and no-show rules remain undecided.
+
+The sections below preserve the **28 October audit baseline**. Their audit-only scope, dependency versions, unresolved product choices and unverified deployment statements are historical and are superseded by this checkpoint and the approved reconstruction work. The detailed historical audit files remain unchanged.
+
+---
+
 Last updated: **28 October 2026 (Asia/Calcutta)**. This file is the single current project-control record. Detailed evidence lives in [system audit](docs/SYSTEM_AUDIT.md), [roadmap](docs/ROADMAP.md), and [audit reports](docs/audit/coverage.md). The [previous audit](docs/audit/previous-audit.md) is historical reference and contains superseded conclusions.
 
 ## Non-negotiable owner rules

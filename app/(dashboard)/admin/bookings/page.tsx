@@ -7,10 +7,15 @@ export const metadata = {
     description: 'View and manage all customer bookings within the Orbit Rides admin panel.',
 };
 
+const bookingStatuses = ['pending', 'confirmed', 'active', 'completed', 'cancelled'] as const;
+function isBookingStatus(value: unknown): value is typeof bookingStatuses[number] {
+    return bookingStatuses.some(status => status === value);
+}
+
 export default async function AdminBookings({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
     const supabase = await createClient();
     const resolvedParams = await searchParams;
-    const statusFilter = resolvedParams.status || 'all';
+    const statusFilter = isBookingStatus(resolvedParams.status) ? resolvedParams.status : 'all';
 
     let query = supabase
         .from('bookings')
@@ -29,13 +34,13 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
 
     const updateStatus = async (formData: FormData) => {
         "use server"
-        const bookingId = formData.get('bookingId') as string;
-        const status = formData.get('status') as string;
+        const bookingId = Number(formData.get('bookingId'));
+        const status = formData.get('status');
         
-        if (!bookingId || !status) return;
+        if (!Number.isSafeInteger(bookingId) || bookingId < 1 || !isBookingStatus(status)) return;
 
         const supabase = await createClient();
-        await supabase.from('bookings').update({ status: status as 'pending' | 'confirmed' | 'active' | 'completed' | 'cancelled' }).eq('id', bookingId);
+        await supabase.from('bookings').update({ status }).eq('id', bookingId);
         revalidatePath('/admin/bookings');
     };
 
@@ -54,7 +59,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
         return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
     };
 
-    const tabs = ['all', 'pending', 'confirmed', 'active', 'completed', 'cancelled'];
+    const tabs = ['all', ...bookingStatuses];
 
     return (
         <div className="px-4 md:p-8 py-8 flex flex-col gap-8 max-w-7xl mx-auto w-full">

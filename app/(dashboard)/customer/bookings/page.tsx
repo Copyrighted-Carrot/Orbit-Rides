@@ -27,8 +27,8 @@ export default async function CustomerBookings() {
 
     const cancelBooking = async (formData: FormData) => {
         "use server"
-        const bookingId = formData.get('bookingId') as string;
-        if (!bookingId) return;
+        const bookingId = Number(formData.get('bookingId'));
+        if (!Number.isSafeInteger(bookingId) || bookingId < 1) return;
 
         const supabase = await createClient();
         await supabase.from('bookings').update({ status: 'cancelled' as const }).eq('id', bookingId);

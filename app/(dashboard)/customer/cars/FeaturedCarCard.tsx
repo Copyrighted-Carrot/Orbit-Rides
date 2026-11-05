@@ -5,10 +5,10 @@ import Link from "next/link";
 import Image from 'next/image'
 import 'swiper/css';
 import {Autoplay} from 'swiper/modules';
-import {m} from 'framer-motion';
+import {m, type Variants} from 'framer-motion';
 import {RightArrowIcon} from "@/app/icons";
 
-const slideVariants = {
+const slideVariants: Variants = {
     hidden: {opacity: 0, y: 50},
     visible: (index: number) => ({
         opacity: 1,

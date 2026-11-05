@@ -68,6 +68,11 @@ export default function UploadNewCarImagesPageContent({car_id}: {  car_id: strin
     async function handleSubmit(e: FormEvent<HTMLFormElement>)
     {
         e.preventDefault();
+        const carId = Number(car_id);
+        if (!Number.isSafeInteger(carId) || carId < 1) {
+            toast.error("Invalid vehicle ID.");
+            return;
+        }
         setIsPending(true);
 
         if (images.length <= 0)
@@ -89,7 +94,7 @@ export default function UploadNewCarImagesPageContent({car_id}: {  car_id: strin
         const {error} = await supabase
             .from('cars')
             .update({img_urls: imageUrls})
-            .eq('id', car_id);
+            .eq('id', carId);
 
         if (error)
             toast.error(error.message);

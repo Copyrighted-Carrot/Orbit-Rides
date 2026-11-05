@@ -11,9 +11,11 @@ import { Car } from '@/lib/types/models';
 
 export default async function EditCarPage({ params }: { params: Promise<{ car_id: string }> }) {
     const { car_id } = await params;
+    const carId = Number(car_id);
+    if (!Number.isSafeInteger(carId) || carId < 1) redirect('/admin/cars');
     const supabase = await createClient();
     
-    const { data: carData } = await supabase.from('cars').select('*').eq('id', car_id).single();
+    const { data: carData } = await supabase.from('cars').select('*').eq('id', carId).single();
     if (!carData) redirect('/admin/cars');
     
     const car = { ...carData, img_urls: carData.img_urls || [] } as Car;

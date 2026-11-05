@@ -2,6 +2,7 @@
 import {createClient} from "@/lib/supabase/server";
 import {redirect} from "next/navigation";
 import {Car} from "@/lib/types/models";
+import type { TablesInsert } from "@/database.types";
 
 export async function addNewCar(newCarData: Car)
 {
@@ -12,11 +13,8 @@ export async function addNewCar(newCarData: Car)
 
     const manufacturer = String(newCarData.manufacturer || '').trim();
     const model = String(newCarData.model || '').trim();
-    const carName = `${manufacturer} ${model}`.trim() || 'Vehicle';
-
-    const formattedCar: Record<string, unknown> = {
+    const formattedCar: TablesInsert<'cars'> = {
         owner_id: user.id,
-        name: carName,
         manufacturer: manufacturer,
         model: model,
         type_id: Number(newCarData.type_id || 1),
@@ -26,35 +24,10 @@ export async function addNewCar(newCarData: Car)
         color: String(newCarData.color || '#FFFFFF').trim(),
     };
 
-    let data = null;
-    let error = null;
+    const {data, error} = await supabase.from("cars").insert(formattedCar).select("id").single();
 
-    // Retry loop: auto-detect and strip any missing columns reported by PostgREST schema cache errors
-    for (let attempt = 0; attempt < 5; attempt++) {
-        const result = await supabase
-            .from("cars")
-            .insert(formattedCar as unknown as Parameters<ReturnType<typeof supabase.from>['insert']>[0])
-            .select();
-
-        data = result.data;
-        error = result.error;
-
-        if (!error) break;
-
-        const match = error.message?.match(/Could not find the '([^']+)' column/i) || error.message?.match(/'([^']+)' column/i);
-        if (match && match[1] && match[1] in formattedCar) {
-            delete formattedCar[match[1]];
-        } else if (error.message?.includes('schema cache')) {
-            if ('color' in formattedCar) delete formattedCar.color;
-            else if ('fuel' in formattedCar) delete formattedCar.fuel;
-            else break;
-        } else {
-            break;
-        }
-    }
-
-    if (!error && data && data.length > 0) {
-        redirect(`/admin/cars/new-car/upload_images/${data[0].id}/`);
+    if (!error && data) {
+        redirect(`/admin/cars/new-car/upload_images/${data.id}/`);
     }
 
     return error ? {error} : {success: true};

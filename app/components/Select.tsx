@@ -13,10 +13,10 @@ const optionStyles = {
     focus: "bg-primary text-primary-content active:bg-gray-400",
 };
 
-function Select(props: SelectProps)
+function Select<Option>(props: SelectProps<Option, false>)
 {
     return (
-        <ReactSelect {...props}
+        <ReactSelect<Option, false> {...props}
                      unstyled
                      styles={{
                          control: (baseStyles: object, state: { isFocused: boolean; }) => ({
