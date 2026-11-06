@@ -1,14 +1,11 @@
-﻿import NavBar from "@/app/components/NavBar";
-import Footer from "@/app/components/Footer";
-import React from "react";
+import NavBar from '@/app/components/NavBar'
+import Footer from '@/app/components/Footer'
+import { requireAccount } from '@/lib/auth/account'
+import type { ReactNode } from 'react'
 
-export default function AdminDashboardLayout({children}: { children: React.ReactNode })
-{
-    return (
-        <>
-            <NavBar role='admin'/>
-            <section className='grow'>{children}</section>
-            <Footer/>
-        </>
-    )
+export const metadata = { robots: { index: false, follow: false } }
+
+export default async function AdminDashboardLayout({ children }: { children: ReactNode }) {
+    await requireAccount('admin')
+    return <><NavBar role="admin" /><section className="grow">{children}</section><Footer /></>
 }

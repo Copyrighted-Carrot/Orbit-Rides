@@ -1,6 +1,7 @@
 import {createServerClient} from '@supabase/ssr'
 import {cookies} from 'next/headers'
 import {Database} from '@/database.types'
+import { guardedSupabaseFetch } from './transport'
 
 /**
  * Creates a server-side Supabase client instance using Next.js cookies for SSR and server actions.
@@ -13,6 +14,7 @@ export async function createClient()
         process.env.NEXT_PUBLIC_SUPABASE_URL as string,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
         {
+            global: { fetch: guardedSupabaseFetch },
             cookies: {
                 getAll()
                 {

@@ -1,106 +1,85 @@
 'use client'
-import Image from "next/image.js";
-import {MoonLoader} from "react-spinners";
-import {SignOutIcon} from "@/app/icons";
-import React, {useEffect, useState} from "react";
-import {useRouter} from "next/navigation";
-import {createClient} from "@/lib/supabase/client";
-import {toast} from "react-toastify";
-import Link from "next/link";
 
-export default function UserProfile()
-{
-    const [isUserAuthenticated, setIsUserAuthenticated] = useState<boolean>(false);
-    const [userAvatar, setUserAvatar] = useState('')
-    const [userName, setUserName] = useState('')
-    const [isSigningOut, setIsSigningOut] = useState(false)
-    const router = useRouter();
-    const supabase = createClient();
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { logout } from '@/app/auth/accountActions'
+import { isAccountRole, type AccountRole } from '@/lib/auth/paths'
 
-    useEffect(() =>
-    {
-        async function getUser()
-        {
-            const session = await supabase.auth.getSession();
-            setIsUserAuthenticated(session.data.session?.user.email !== undefined);
-            setUserAvatar(session.data.session?.user.user_metadata.picture)
-            setUserName(session.data.session?.user.user_metadata.display_name || session.data.session?.user.user_metadata.full_name)
+type Profile = { displayName: string; role: AccountRole | null }
 
-            supabase.auth.onAuthStateChange((_event, session) =>
-            {
-                setIsUserAuthenticated(session?.user.email !== undefined);
-            });
+export default function UserProfile() {
+    const supabase = useMemo(() => createClient(), [])
+    const pathname = usePathname()
+    const router = useRouter()
+    const identity = useRef<string | null | undefined>(undefined)
+    const [profile, setProfile] = useState<Profile | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState(false)
+
+    useEffect(() => {
+        let active = true
+        let generation = 0
+        function observeIdentity(userId: string | null) {
+            const previous = identity.current
+            identity.current = userId
+            if (previous !== undefined && previous !== userId) router.refresh()
         }
-
-        getUser()
-    }, [supabase]);
-
-    const handleSignOut = async () =>
-    {
-        if (isSigningOut) return;
-
-        setIsSigningOut(true);
-        const {error} = await supabase.auth.signOut();
-
-        if (error)
-        {
-            toast.error(error.message)
-            return;
+        async function load() {
+            const request = ++generation
+            const { data: { user }, error: authError } = await supabase.auth.getUser()
+            if (!active || request !== generation) return
+            observeIdentity(user?.id || null)
+            if (!user || authError) {
+                setProfile(null)
+                setLoadError(Boolean(authError && authError.name !== 'AuthSessionMissingError'))
+                setLoading(false)
+                return
+            }
+            const [account, role] = await Promise.all([
+                supabase.from('user_profiles').select('display_name').eq('user_id', user.id).maybeSingle(),
+                supabase.from('user_roles').select('role').eq('user_id', user.id).maybeSingle(),
+            ])
+            if (!active || request !== generation) return
+            setProfile({ displayName: account.data?.display_name?.trim() || 'Customer', role: isAccountRole(role.data?.role) ? role.data.role : null })
+            setLoadError(Boolean(account.error || role.error))
+            setLoading(false)
         }
+        void load()
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            generation++
+            setProfile(null)
+            setLoading(true)
+            setTimeout(() => {
+                if (active) {
+                    observeIdentity(session?.user.id || null)
+                    void load()
+                }
+            }, 0)
+        })
+        const refresh = () => { void load() }
+        window.addEventListener('orbit-profile-updated', refresh)
+        window.addEventListener('focus', refresh)
+        return () => {
+            active = false
+            subscription.unsubscribe()
+            window.removeEventListener('orbit-profile-updated', refresh)
+            window.removeEventListener('focus', refresh)
+        }
+    }, [supabase, pathname, router])
 
-        router.push('/');
-        setIsSigningOut(false);
-    };
-
-    if (!isUserAuthenticated) return <Link className='btn btn-primary btn-sm' href={'/auth/customer/login/'}>Rent Now</Link>
-
-    return (
-        <div className="dropdown dropdown-end">
-            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle justify-center items-center flex">
-                <div className={`avatar w-9 h-9 ${!userAvatar && 'placeholder'}`}>
-                    {
-                        userAvatar
-                            ?
-                            <Image
-                                className='rounded-full'
-                                width={100}
-                                height={100}
-                                alt="User profile picture."
-                                src={userAvatar}/>
-                            :
-                            <span
-                                className='bg-emerald-950 dark:bg-emerald-100 text-emerald-100 dark:text-emerald-900 rounded-full h-auto w-full flex justify-center items-center text-lg'>{userName.substring(0, 1)}</span>
-                    }
-                </div>
-            </div>
-            <ul
-                tabIndex={0}
-                className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-                <li>
-                    <Link href="/customer/profile" className="justify-between">
-                        Profile
-                    </Link>
-                </li>
-                
-                <li>
-                    <Link href="/customer/settings" className="justify-between">
-                        Settings
-                    </Link>
-                </li>
-
-                <div>
-                    <li>
-                        <button type='button'
-                                className='relative'
-                                onClick={handleSignOut}>
-                            Sign out
-                            <span className='absolute right-3 top-0 bottom-0 inline-flex items-center'>
-                    {isSigningOut ? <MoonLoader size='14px'/> : <SignOutIcon width={17} height={17}/>}
-                    </span>
-                        </button>
-                    </li>
-                </div>
-            </ul>
-        </div>
-    );
+    if (loading) return <span className="text-sm" role="status">Loading account…</span>
+    if (!profile) return <Link className="btn btn-primary btn-sm" href="/auth/customer/login">{loadError ? 'Retry login' : 'Log in'}</Link>
+    return <details className="dropdown dropdown-end">
+        <summary className="btn btn-ghost btn-sm" aria-label="Account menu">{profile.displayName}</summary>
+        <ul className="menu dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-56 p-2 shadow">
+            {loadError && <li><span role="status">Account details could not be refreshed.</span></li>}
+            {profile.role === 'customer' && <li><Link href="/customer/profile">Profile</Link></li>}
+            {profile.role === 'admin' && <li><Link href="/admin">Admin dashboard</Link></li>}
+            {!profile.role && <li><Link href="/auth/access-unavailable">Check account access</Link></li>}
+            <li><Link href={profile.role === 'customer' ? '/customer/settings' : '/auth/account'}>Account settings</Link></li>
+            <li><form action={logout}><button type="submit">Sign out</button></form></li>
+        </ul>
+    </details>
 }

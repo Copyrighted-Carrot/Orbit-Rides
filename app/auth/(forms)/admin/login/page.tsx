@@ -1,14 +1,8 @@
-﻿import {LoginPage} from "@/app/pages/LoginPage";
+import { LoginPage } from '@/app/pages/LoginPage'
 
-export const metadata = {
-    title: "Login | Orbit Rides - Admin",
-    description: "Securely access the Orbit Rides admin panel to manage rentals, bookings, and more.",
-};
+export const metadata = { title: 'Administrator login | Orbit Rides', robots: { index: false, follow: false } }
 
-export default function AdminLoginPage() {
-    return (
-        <div>
-            <LoginPage isAdmin={true}/>
-        </div>
-    );
+export default async function AdminLoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+    const params = await searchParams
+    return <LoginPage isAdmin next={params.next} />
 }

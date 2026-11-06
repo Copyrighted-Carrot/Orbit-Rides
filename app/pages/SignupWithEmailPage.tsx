@@ -1,62 +1,32 @@
 'use client'
-import React, {useEffect, useActionState} from "react";
-import TextBox from "@/app/components/TextBox";
-import Link from "next/link";
-import {LeftArrowIcon, LoginIcon} from "@/app/icons";
-import {signupAdminWithEmail, signupCustomerWithEmail} from "@/app/auth/signupActions";
-import {FormSubmitButton} from "@/app/components/FormSubmitButton";
-import {toast} from "react-toastify";
-import LogoLink from "@/app/components/LogoLink";
-import PasswordTextBox from "@/app/components/PasswordTextBox";
 
-export default function SignupWithEmailPage({isAdmin}: { isAdmin: boolean })
-{
+import { useActionState } from 'react'
+import Link from 'next/link'
+import { signupCustomerWithEmail } from '@/app/auth/signupActions'
+import { FormSubmitButton } from '@/app/components/FormSubmitButton'
+import LogoLink from '@/app/components/LogoLink'
+import PasswordTextBox from '@/app/components/PasswordTextBox'
+import { LoginIcon } from '@/app/icons'
+import type { AuthFormState } from '@/lib/auth/form'
 
-    const [state, signupAction, isPending] =
-        useActionState(isAdmin ? signupAdminWithEmail : signupCustomerWithEmail, {
-            data: {
-                email: '',
-                password: '',
-                username: '',
-            },
-            error: ''
-        })
-
-    useEffect(() =>
-    {
-        if (!state.error) return;
-        toast.error(state.error)
-    }, [state]);
-
-    return (
-        <form action={signupAction}
-              id="signup-form"
-              autoComplete='on'
-              className="flex flex-col w-full py-8 px-2 sm:px-8 my-auto min-h-screen h-full gap-7 justify-center relative scale-95 z-[1] animate-appear">
-
-            <Link href={`/auth/${isAdmin ? 'admin' : 'customer'}/signup`} title='Back'
-                  className='absolute left-3 top-3 text-sm'><LeftArrowIcon/></Link>
-
-            <LogoLink/>
-
-            <h1 className='text-2xl text-center'>Sign up</h1>
-
-            <div className='flex flex-col gap-4'>
-                <TextBox label='Email' type='email' id='email' placeholder='belindosamson@gmail.com'
-                         defaultValue={state.data.email}/>
-                <PasswordTextBox label='Password' id='password' placeholder='*****'
-                         defaultValue={state.data.password}/>
-                <TextBox label='User Name' type='text' id='username' placeholder='Copyrighted_Carrot'
-                         defaultValue={state.data.username}/>
-                <FormSubmitButton text='Sign up' isPending={isPending} icon={<LoginIcon/>}/>
-
-                <span className='text-sm'>Already have an account? <Link
-                    href={isAdmin ? '/auth/admin/login' : '/auth/customer/login'}
-                    className='link link-primary link-hover font-medium'>Log in</Link></span>
-
-                <span className='text-xs'>By signing up, you agree to our <a
-                    className='link link-primary link-hover font-medium' href={`/privacy-policy`}>Privacy Policy</a>.</span>
-            </div>
-        </form>
-    );
+export default function SignupWithEmailPage() {
+    const [state, action, pending] = useActionState<AuthFormState, FormData>(signupCustomerWithEmail, {})
+    return <form action={action} className="flex flex-col w-full py-8 px-4 sm:px-8 my-auto min-h-screen gap-6 justify-center">
+        <LogoLink />
+        <h1 className="text-2xl text-center">Create a customer account</h1>
+        <div className="flex flex-col gap-1">
+            <label htmlFor="username">Display name</label>
+            <input id="username" name="username" required minLength={1} maxLength={80} autoComplete="name" defaultValue={state.data?.username} className="input input-bordered" />
+        </div>
+        <div className="flex flex-col gap-1">
+            <label htmlFor="email">Email</label>
+            <input id="email" name="email" type="email" required maxLength={254} autoComplete="email" defaultValue={state.data?.email} className="input input-bordered" />
+        </div>
+        <PasswordTextBox id="password" label="Password" placeholder="At least 12 characters" autoComplete="new-password" />
+        {state.error && <p role="alert">{state.error}</p>}
+        {state.message && <p role="status">{state.message}</p>}
+        <FormSubmitButton text="Create account" isPending={pending} icon={<LoginIcon />} />
+        <p>Already registered? <Link href="/auth/customer/login" className="link">Log in</Link></p>
+        <Link className="link text-sm" href="/privacy-policy">Privacy policy</Link>
+    </form>
 }

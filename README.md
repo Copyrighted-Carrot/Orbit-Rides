@@ -21,6 +21,16 @@ The [clean database foundation](database/clean/README.md) is a separate, tested 
 
 Build and lint success do not validate bookings, payments, permissions, or the hosted database. See the audit's explicit coverage and limitations.
 
+## Account configuration
+
+Set `NEXT_PUBLIC_SITE_URL` to the exact canonical application origin, including the local port. Add the matching callback URL to the isolated project's Supabase Auth redirect allowlist. Confirmation and recovery routes preserve session cookies and redirect to this configured origin. Mixing `localhost` and `127.0.0.1` loses host-scoped browser cookies.
+
+Email/password signup creates customer accounts only. Roles come from `user_roles`; editable names come from `user_profiles`. Profile and password-change forms reject submissions from a different account than the one that opened the form. Google login is hidden by default; `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` requires a separately configured and verified provider.
+
+Application HTTP clients refuse requests to the historical Rental project. Keep the usual local environment unchanged until an explicit environment cutover; use a separate source/build and process-level staging overrides for integration checks. Do not reuse production Auth identities or sessions.
+
+Run `node --test tests/auth-contract.test.mjs` with the pinned Node version for archive protection, safe return paths, canonical origin and password-boundary checks. Hosted Auth/Storage tests are described in the clean database README. Browser checks must cover confirmation, recovery, stale forms and account switching in addition to login.
+
 ## Project ownership
 
 Maintained by Belindo Samson S. (`belindosamson@gmail.com`). All project commits must use the owner's authorized identity. Do not add assistant identities, co-author trailers, bot contributors, or collaborators. Changes to application behavior follow audit → document → plan → discuss → implement → test → document → commit.

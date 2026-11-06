@@ -1,11 +1,8 @@
-﻿import {LoginPage} from "@/app/pages/LoginPage";
+import { LoginPage } from '@/app/pages/LoginPage'
 
-export const metadata = {
-    title: "Login | Orbit Rides",
-    description: "Welcome back! Log in to your Orbit Rides account to manage your bookings, view rental history, and explore our latest deals.",
-};
+export const metadata = { title: 'Login | Orbit Rides', robots: { index: false, follow: false } }
 
-export default function CustomerLoginPage()
-{
-    return (<div><LoginPage isAdmin={false}/></div>)
-};
+export default async function CustomerLoginPage({ searchParams }: { searchParams: Promise<{ next?: string; passwordUpdated?: string }> }) {
+    const params = await searchParams
+    return <LoginPage isAdmin={false} next={params.next} passwordUpdated={params.passwordUpdated === '1'} />
+}

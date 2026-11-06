@@ -4,14 +4,16 @@ import Image from "next/image";
 import bgImg from '@/public/images/customer-dashboard.jpg';
 import NavBar from "@/app/components/NavBar";
 import Footer from "@/app/components/Footer";
+import {requireAccount} from '@/lib/auth/account';
 
 export const metadata = {
     title: "Your Journey Starts Here | Orbit Rides",
     description: "Choose your preferred pickup date, time, and delivery location for your car rental.",
 };
 
-export default function CustomerDashboard()
+export default async function CustomerDashboard()
 {
+    await requireAccount('customer');
     return (
         <>
             <NavBar position={'fixed'} role={'customer'}/>

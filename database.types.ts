@@ -440,7 +440,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_my_profile: { Args: { p_display_name: string }; Returns: string }
+      my_rental_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: { confirmed_rentals: number; completed_rentals: number; completed_demo_rental_value_minor: number; currency: string }[]
+      }
     }
     Enums: {
       [_ in never]: never

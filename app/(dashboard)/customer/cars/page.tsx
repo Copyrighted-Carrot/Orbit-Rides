@@ -40,7 +40,7 @@ export default async function CustomerCarsPage({searchParams}: {
             .select('display_name')
             .eq('user_id', user.id)
             .single();
-        userName = profile?.display_name || user.user_metadata?.display_name || user.email || null;
+        userName = profile?.display_name?.trim() || 'Customer';
     }
 
     // Fetch recently viewed vehicles for this user
@@ -196,4 +196,3 @@ export default async function CustomerCarsPage({searchParams}: {
         </div>
     );
 }
-

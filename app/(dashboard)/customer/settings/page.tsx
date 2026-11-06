@@ -1,25 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import SettingsPageContent from './SettingsPageContent';
+import { getOwnProfile, requireAccount } from '@/lib/auth/account'
+import SettingsPageContent from './SettingsPageContent'
 
-export const metadata = {
-    title: 'Account Settings | Orbit Rides',
-    description: 'Update your profile and account settings.',
-};
+export const metadata = { title: 'Account settings | Orbit Rides', robots: { index: false, follow: false } }
 
 export default async function SettingsPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        redirect('/auth/customer/login');
-    }
-
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-    return <SettingsPageContent user={user} profile={profile} />;
+    await requireAccount('customer')
+    const { user, profile } = await getOwnProfile()
+    return <SettingsPageContent key={user.id} userId={user.id} email={user.email || ''} displayName={profile?.display_name || ''} />
 }
