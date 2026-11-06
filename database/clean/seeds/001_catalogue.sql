@@ -21,3 +21,8 @@ select v.code,v.make,v.model,t.id,v.rate,true from (values
 ) v(code,make,model,body,rate) join public.vehicle_types t on t.name=v.body
 on conflict(fleet_code) do nothing;
 
+
+-- Explicit portfolio pickup fixture; this is not a physical rental office.
+insert into public.pickup_location(singleton,name,city,address)
+values(true,'Demo pickup','Coimbatore, Tamil Nadu, India','Virtual demo location - no physical pickup.')
+on conflict(singleton) do nothing;

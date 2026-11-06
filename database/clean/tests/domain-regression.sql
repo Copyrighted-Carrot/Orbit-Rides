@@ -27,6 +27,7 @@ BEGIN
   WHERE u.email='customer-b@orbit-demo.example.invalid' AND r.role='customer';
  SELECT id INTO STRICT type_id FROM public.vehicle_types ORDER BY name LIMIT 1;
  PERFORM set_config('request.jwt.claim.sub',staff::text,true);
+ PERFORM public.configure_pickup_location('Regression pickup','Test city','Virtual regression location');
  PERFORM set_config('orbit.fixture_time',baseline::text,true);
  vehicle:=public.create_vehicle('TEST-'||left(replace(gen_random_uuid()::text,'-',''),15),type_id,'Test','Domain regression',125000);
  PERFORM public.set_vehicle_publication(vehicle,true);

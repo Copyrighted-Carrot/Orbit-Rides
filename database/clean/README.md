@@ -17,8 +17,8 @@ Create fresh Auth accounts through the project's administrative Auth interface. 
 | Concern | Authoritative state and command boundary |
 | --- | --- |
 | Identity | Supabase Auth; trusted `user_roles`; editable `user_profiles` through `update_my_profile` |
-| Discovery | Canonical `vehicles`, publication and operational state; `available_vehicles(start,end)` uses reservation/maintenance allocations |
-| Quote | `create_quote(vehicle,start,end,request_id)`; server snapshots price, customer and vehicle |
+| Discovery | `search_fleet` filters and paginates canonical vehicles; dated searches delegate to `available_vehicles(start,end)` using reservation/maintenance allocations |
+| Quote | `create_quote(vehicle,start,end,request_id)`; server snapshots price, customer, vehicle and configured pickup location |
 | Checkout | `start_checkout(quote_id)` returns one stable booking; its payment session is owner-scoped |
 | Demo payment | Explicit `approve_demo_payment(session_id)`; decline/abandon commands are separate; no money transferred |
 | Confirmation | `finalize_booking(session_id)` verifies the recorded payment event and returns the same booking on retry |
@@ -39,13 +39,18 @@ Successful demo approval is a simulation, not settlement. UI must say **Demo pay
 
 Failed return inspection keeps the rental under inspection and the vehicle in maintenance. Passing inspection completes it, subject to the actual-return turnaround. Staff notes and inspection photos remain staff-only. Late-return penalties, refunds, no-show rules and discount campaigns are not implemented.
 
+
+The singleton pickup location is public read-only and editable through the admin-only `configure_pickup_location` command. New quotes require a configured location and snapshot its name, city and address; edits do not rewrite earlier quotes. The explicit portfolio seed uses **Demo pickup, Coimbatore, Tamil Nadu, India**, with **Virtual demo location - no physical pickup.** This is a simulation, not a claim that a rental office exists. Earlier synthetic quotes retain their original lack of a location snapshot.
+
+Search accepts paired future timestamps, optional type/text/maximum daily rate and bounded pagination (up to 24 records per page). All filters apply before the count and pagination. Missing/archived UUIDs do not load a vehicle. Customer links carry scalar filters and a canonical UUID, never serialized vehicle or price objects. A query failure must show an error with retry, not an empty inventory result.
+
 ## Media lifecycle
 
 1. An operator prepares a media association for a gallery slot or inspection.
 2. Upload to its exact private bucket/path; no overwriting existing objects.
 3. Call `validate-media` with `{ media_id, inspection }`. It downloads the canonical object, checks content/MIME/size, fully decodes a still JPEG/PNG/WebP, and records SHA-256 plus dimensions through a server-only RPC.
 4. Publish gallery media or attach inspection evidence. Direct publication without decoded validation fails.
-5. Gallery replacement retires the previous association. Republishing a retained validated version restores it.
+5. Gallery replacement retires the previous association. `retire_vehicle_media` removes an image from discovery without destroying its retained version. Republishing a retained validated version restores it.
 6. Failed uploads are marked discarded, removed through Storage, then completed with `finish_discarded_upload`. Retry is safe. Upload and cleanup lock the same association, preventing late orphan inserts.
 
 Limits: 8 MiB, 10,000 pixels per dimension and 20 million total pixels. Animated images are rejected. Storage and database operations remain separate; a failed upload is never represented as a published gallery image. Attached inspection evidence cannot be removed through fleet cleanup. The decoder uses ImageScript 3.13.1 under its MIT license option; upstream retains its third-party notices.
@@ -58,7 +63,7 @@ The lifecycle seed requires these fresh synthetic accounts: `operator@orbit-demo
 
 Examples cover completed, active, upcoming, cancelled and pending demo bookings, planned maintenance and a failed inspection. Reruns preserve references/history. A ten-minute checkout expires normally; `003_refresh_demo_checkout.sql` explicitly creates a fresh example while retaining expired attempts. It is not a production job.
 
-SQL tests `account-bootstrap.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
+SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
 
 HTTP tests `auth-api.mjs`, `checkout-api.mjs` and `media-api.mjs` receive JSON on stdin from an external secret store:
 
