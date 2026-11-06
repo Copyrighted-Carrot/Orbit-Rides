@@ -1,11 +1,9 @@
-﻿import NewCarPageContent from "@/app/(dashboard)/admin/cars/new-car/NewCarPageContent";
+import NewCarPageContent from './NewCarPageContent'
+import { readVehicleTypes } from '@/lib/fleet/admin'
 
-export const metadata = {
-    title: 'Add New Car: Details | Orbit Rides - Admin',
-    description: 'Enter car details, including manufacturer, model, type, and pricing, within the Orbit Rides admin panel.',
-};
+export const metadata = { title: 'Add vehicle | Orbit Rides', robots: { index: false, follow: false } }
 
-export default function NewCarPage()
-{
-    return <NewCarPageContent/>
+export default async function NewCarPage() {
+    const types = await readVehicleTypes()
+    return <NewCarPageContent types={types} />
 }

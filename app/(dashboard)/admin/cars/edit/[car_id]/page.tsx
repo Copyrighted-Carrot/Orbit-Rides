@@ -1,27 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
-import { redirect } from 'next/navigation';
-import EditCarPageContent from './EditCarPageContent';
+import { readAdminVehicle, readVehicleTypes } from '@/lib/fleet/admin'
+import EditCarPageContent from './EditCarPageContent'
 
-export const metadata = {
-    title: 'Edit Vehicle | Orbit Rides - Admin',
-    description: 'Edit vehicle details in the Orbit Rides admin panel.',
-};
-
-import { Car } from '@/lib/types/models';
+export const metadata = { title: 'Edit vehicle | Orbit Rides', robots: { index: false, follow: false } }
 
 export default async function EditCarPage({ params }: { params: Promise<{ car_id: string }> }) {
-    const { car_id } = await params;
-    const carId = Number(car_id);
-    if (!Number.isSafeInteger(carId) || carId < 1) redirect('/admin/cars');
-    const supabase = await createClient();
-    
-    const { data: carData } = await supabase.from('cars').select('*').eq('id', carId).single();
-    if (!carData) redirect('/admin/cars');
-    
-    const car = { ...carData, img_urls: carData.img_urls || [] } as Car;
-    
-    const { data: typesData } = await supabase.from('car_types').select();
-    const carTypes = (typesData || []).map(t => ({ value: t.id.toString(), label: t.type }));
-    
-    return <EditCarPageContent car={car} carTypes={carTypes} />;
+    const { car_id } = await params
+    const [vehicle, types] = await Promise.all([readAdminVehicle(car_id), readVehicleTypes()])
+    return <EditCarPageContent vehicle={vehicle} types={types} />
 }

@@ -1,14 +1,10 @@
-﻿import UploadNewCarImagesPageContent
-    from "@/app/(dashboard)/admin/cars/new-car/upload_images/[car_id]/UploadNewCarImagesPageContent";
-import {use} from "react";
+import UploadNewCarImagesPageContent from './UploadNewCarImagesPageContent'
+import { readAdminVehicle, readAdminMedia } from '@/lib/fleet/admin'
 
-export const metadata = {
-    title: 'Add New Car: Images | Orbit Rides - Admin',
-    description: 'Upload images of your car within the Orbit Rides admin panel.',
-};
-
-export default function UploadNewCarImagesPage({params}: { params: Promise<{ car_id: string }> })
-{
-    const {car_id} = use(params);
-    return <UploadNewCarImagesPageContent car_id={car_id}/>
+export const metadata = { title: 'Vehicle gallery | Orbit Rides', robots: { index: false, follow: false } }
+export default async function GalleryPage({ params, searchParams }: { params: Promise<{ car_id: string }>; searchParams: Promise<{ state?: string; page?: string }> }) {
+    const { car_id } = await params
+    const vehicle = await readAdminVehicle(car_id)
+    const gallery = await readAdminMedia(vehicle.id, await searchParams)
+    return <UploadNewCarImagesPageContent vehicle={vehicle} gallery={gallery} />
 }
