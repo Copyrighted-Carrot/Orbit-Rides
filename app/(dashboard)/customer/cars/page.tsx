@@ -1,198 +1,32 @@
-import {Car} from "@/lib/types/models";
-import Link from "next/link";
-import FeaturedCarsCarousel from "@/app/(dashboard)/customer/cars/FeaturedCarCard";
-import {createClient} from "@/lib/supabase/server";
-import CarFilters from "@/app/(dashboard)/customer/cars/CarFilters";
-import {redirect} from "next/navigation";
-import {getDaysCountFromDateRange} from "@/lib/util/util";
+import Link from 'next/link'
+import CarCard from './CarCard'
+import FleetSearchForm from '@/app/components/FleetSearchForm'
+import { getCatalogue, getVehicleTypes, getPickupLocation } from '@/lib/fleet/catalogue'
+import { parseSearchParams, toSearchParams } from '@/lib/fleet/search'
 
-export const metadata = {
-    title: 'Browse Cars | Orbit Rides',
-    description: 'Explore our extensive selection of cars for rent. Find your perfect ride for any occasion.',
-};
+export const metadata = { title: 'Browse vehicles | Orbit Rides', robots: { index: false, follow: false } }
 
-import OrbitTripPlanner from "@/app/components/OrbitTripPlanner";
-import CarComparator from "@/app/components/CarComparator";
-import PersonalizedHeader from "@/app/components/PersonalizedHeader";
-import AiDamageDetector from "@/app/components/AiDamageDetector";
-import AiFleetAssistant from "@/app/components/AiFleetAssistant";
-
-export default async function CustomerCarsPage({searchParams}: {
-    searchParams: Promise<{ pickupData: string, deliveryLocation: string }>
-})
-{
-    const {pickupData, deliveryLocation} = await searchParams;
-    if (!pickupData || !deliveryLocation) redirect('/customer/');
-
-    const pickupDataJson = JSON.parse(pickupData)
-    const rentDays = getDaysCountFromDateRange(pickupDataJson['pickup-date']);
-
-    const supabase = await createClient();
-
-    // Fetch current user
-    const {data: {user}} = await supabase.auth.getUser();
-
-    // Fetch user profile for personalized header
-    let userName: string | null = null;
-    if (user) {
-        const {data: profile} = await supabase
-            .from('user_profiles')
-            .select('display_name')
-            .eq('user_id', user.id)
-            .single();
-        userName = profile?.display_name?.trim() || 'Customer';
-    }
-
-    // Fetch recently viewed vehicles for this user
-    let recentlyViewed: Array<{name: string, price: number, image: string, type: string, carId: number}> = [];
-    if (user) {
-        const {data: recentData} = await supabase
-            .from('recently_viewed')
-            .select('car_id, cars(id, manufacturer, model, price_per_day, img_urls, type_id)')
-            .eq('user_id', user.id)
-            .order('viewed_at', {ascending: false})
-            .limit(4);
-        
-        if (recentData) {
-            recentlyViewed = recentData
-                .filter((rv: Record<string, unknown>) => rv.cars)
-                .map((rv: Record<string, unknown>) => {
-                    const car = rv.cars as Record<string, unknown>;
-                    const imgUrls = car.img_urls as string[] | null;
-                    return {
-                        name: `${car.manufacturer} ${car.model}`,
-                        price: car.price_per_day as number,
-                        image: imgUrls && imgUrls.length > 0 ? imgUrls[0] : '/images/car-owners.jpg',
-                        type: 'Vehicle',
-                        carId: car.id as number,
-                    };
-                });
-        }
-    }
-
-    // Fetch pending bookings for unfinished booking bar
-    let pendingBooking: {destination: string, dateRange: string, carId: number} | null = null;
-    if (user) {
-        const {data: pendingData} = await supabase
-            .from('bookings')
-            .select('car_id, date_range, pickup_location')
-            .eq('user_id', user.id)
-            .eq('status', 'pending')
-            .order('created_at', {ascending: false})
-            .limit(1)
-            .single();
-        
-        if (pendingData) {
-            pendingBooking = {
-                destination: pendingData.pickup_location || 'Unknown',
-                dateRange: pendingData.date_range || '',
-                carId: pendingData.car_id,
-            };
-        }
-    }
-
-    // Fetch available cars (exclude archived, with fallback if column is missing)
-    let carsData: Car[] | null = null;
-    let carsError: { message?: string } | null = null;
-
-    const carsResult = await supabase
-        .from('cars')
-        .select('*')
-        .not('img_urls', 'is', null)
-        .neq('is_archived', true)
-        .order('price_per_day', {ascending: false});
-
-    if (carsResult.error) {
-        // Fallback if is_archived column does not exist on the table yet
-        if (carsResult.error.message?.includes('is_archived') || carsResult.error.code === '42703') {
-            const fallbackResult = await supabase
-                .from('cars')
-                .select('*')
-                .not('img_urls', 'is', null)
-                .order('price_per_day', {ascending: false});
-            carsData = fallbackResult.data as Car[] | null;
-            carsError = fallbackResult.error;
-        } else {
-            carsError = carsResult.error;
-        }
-    } else {
-        carsData = carsResult.data as Car[] | null;
-    }
-
-    const {data: typesData, error: typesError} = await supabase
-        .from("car_types")
-        .select();
-
-    if (carsError) throw new Error(carsError.message);
-    if (typesError) throw new Error(typesError.message || 'Failed to load car types');
-
-    const carTypes = (typesData || []).map((carType) => ({
-        value: carType.id,
-        label: carType.type
-    }));
-
-    const cars: Car[] = (carsData || []) as Car[];
-
-    // Populate the type_display for each car.
-    cars.forEach(car =>
-    {
-        const carType = carTypes.find(type => type.value === car.type_id);
-        if (carType) car.type_display = carType.label;
-    });
-
-    const featuredCars = cars.filter(car => car.price_per_day > 60);
-    const regularCars = cars.filter(car => !featuredCars.includes(car));
-
-    if (!cars || cars.length <= 0) return (
-        <div className='flex flex-col justify-center items-center gap-6 h-full min-h-[60vh] p-8 text-center'>
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl">
-                🚗
-            </div>
-            <div className="space-y-2">
-                <h2 className='text-xl font-bold text-white'>No Vehicles Found</h2>
-                <p className="text-sm text-slate-400 max-w-sm">
-                    We couldn&apos;t find any rental cars matching your location and dates. Try searching with a different region or dates.
-                </p>
-            </div>
-            <Link href={'/customer/'} className='btn btn-primary px-8'>Try Another Location</Link>
-        </div>
-    );
-
-    return (
-        <div className='flex flex-col gap-12 py-10 pb-16 px-4 md:px-8 lg:px-14 max-w-7xl mx-auto w-full'>
-
-            {/* PERSONALIZED USER GREETING & RECENTLY VIEWED STRIP — now with real data */}
-            <PersonalizedHeader 
-                userName={userName}
-                recentlyViewed={recentlyViewed}
-                pendingBooking={pendingBooking}
-            />
-
-            <FeaturedCarsCarousel
-                className={'w-full h-auto mt-8 md:bg-slate-900/80 border border-white/10 md:rounded-3xl md:shadow-2xl md:!p-6 backdrop-blur-2xl'}
-                rentDate={pickupData}
-                deliveryLocation={deliveryLocation}
-                cars={featuredCars}/>
-
-            {/* UNIFIED AI TRIP PLANNER — replaces cost calculator + trip planner + recommender */}
-            <OrbitTripPlanner cars={cars} />
-
-            {/* DAMAGE DOCUMENTATION TOOL */}
-            <AiDamageDetector />
-
-            {/* VISUAL SIDE-BY-SIDE CAR COMPARATOR */}
-            <CarComparator cars={cars} />
-
-            <CarFilters 
-                cars={regularCars}
-                rentDaysCount={rentDays}
-                pickupData={pickupData}
-                deliveryLocation={deliveryLocation}
-                carTypes={carTypes}
-            />
-
-            {/* FLOATING AI FLEET ASSISTANT — now with real car data */}
-            <AiFleetAssistant availableCars={cars} />
-        </div>
-    );
+export default async function CustomerCarsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+    const parsed = parseSearchParams(await searchParams)
+    const [types, pickup] = await Promise.all([getVehicleTypes(), getPickupLocation()])
+    const result = parsed.error ? null : await getCatalogue(parsed)
+    const pages = result ? Math.max(1, Math.ceil(result.total / result.pageSize)) : 1
+    const pageHref = (page: number) => '/customer/cars?' + toSearchParams({ ...parsed.filters, page })
+    return <div className="max-w-7xl w-full mx-auto px-4 md:px-8 py-10 space-y-6">
+        <h1 className="text-3xl font-bold">Browse vehicles</h1>
+        {pickup ? <p>Fixed pickup: <strong>{pickup.name}</strong>, {pickup.address}, {pickup.city}.</p> : <p role="status">Pickup details are currently unavailable. You can browse the fleet; rentals cannot be quoted until pickup is available.</p>}
+        <FleetSearchForm filters={parsed.filters} types={types} />
+        {parsed.error && <p role="alert" className="text-error">{parsed.error}</p>}
+        {result && <>
+            <p role="status">{result.total} {result.total === 1 ? 'vehicle' : 'vehicles'} {parsed.startsAt ? 'available for the selected interval' : 'in the published catalogue. Choose dates to check availability'}.</p>
+            {result.mediaWarning && <p role="status">Some photos could not be loaded. Vehicle details are still available.</p>}
+            {result.vehicles.length ? <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">{result.vehicles.map(vehicle => <CarCard key={vehicle.id} vehicle={vehicle} filters={parsed.filters} />)}</div>
+                : <div className="rounded-lg border p-6 space-y-3"><h2 className="text-xl font-semibold">No vehicles match this page of results</h2><p>Try different dates, a different daily price, or clear the filters.</p><Link className="link" href="/customer/cars">Clear filters</Link>{parsed.filters.page > 1 && <Link className="link ml-4" href={pageHref(1)}>First results page</Link>}</div>}
+            <nav aria-label="Vehicle results pages" className="flex gap-4 items-center">
+                {result.page > 1 && <Link className="btn btn-outline" href={pageHref(result.page - 1)}>Previous</Link>}
+                <span>Page {result.page} of {pages}</span>
+                {result.page < pages && <Link className="btn btn-outline" href={pageHref(result.page + 1)}>Next</Link>}
+            </nav>
+        </>}
+    </div>
 }
