@@ -422,6 +422,7 @@ export type Database = {
           customer_name: string
           ends_at: string
           expires_at: string
+          hold_seconds: number | null
           id: string
           pickup_location_snapshot: Json | null
           rate_minor: number
@@ -440,6 +441,7 @@ export type Database = {
           customer_name: string
           ends_at: string
           expires_at: string
+          hold_seconds?: number | null
           id?: string
           pickup_location_snapshot?: Json | null
           rate_minor: number
@@ -458,6 +460,7 @@ export type Database = {
           customer_name?: string
           ends_at?: string
           expires_at?: string
+          hold_seconds?: number | null
           id?: string
           pickup_location_snapshot?: Json | null
           rate_minor?: number

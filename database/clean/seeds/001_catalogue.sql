@@ -24,5 +24,5 @@ on conflict(fleet_code) do nothing;
 
 -- Explicit portfolio pickup fixture; this is not a physical rental office.
 insert into public.pickup_location(singleton,name,city,address)
-values(true,'Demo pickup','Coimbatore, Tamil Nadu, India','Virtual demo location - no physical pickup.')
+values(true,'Orbit Rides','Coimbatore, Tamil Nadu, India','Demo pickup location')
 on conflict(singleton) do nothing;
