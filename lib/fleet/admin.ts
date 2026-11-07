@@ -38,7 +38,7 @@ export async function readAdminFleet(params: { q?: string; status?: string; type
     const client = await adminClient()
     const page = pageNumber(params.page)
     const search = (typeof params.q === 'string' ? params.q : '').trim().slice(0, 80)
-    const status = ['published', 'draft', 'maintenance', 'inspection', 'archived'].includes(params.status || '') ? params.status! : 'all'
+    const status = ['published', 'draft', 'occupied', 'maintenance', 'inspection', 'archived'].includes(params.status || '') ? params.status! : 'all'
     const type = isVehicleId(params.type) ? params.type : ''
     const size = 12
     let query = client.from('vehicles').select(vehicleColumns, { count: 'exact' })

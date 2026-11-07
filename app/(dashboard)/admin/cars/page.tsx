@@ -22,7 +22,7 @@ export default async function AdminCarsPage({ searchParams }: { searchParams: Pr
             </label>
             <label className="form-control gap-1" htmlFor="fleet-status">Status
                 <select id="fleet-status" name="status" defaultValue={fleet.status} className="select select-bordered">
-                    <option value="all">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="maintenance">Maintenance</option><option value="inspection">Inspection</option><option value="archived">Archived</option>
+                    <option value="all">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="occupied">Occupied</option><option value="maintenance">Maintenance</option><option value="inspection">Inspection</option><option value="archived">Archived</option>
                 </select>
             </label>
             <label className="form-control gap-1" htmlFor="fleet-type">Vehicle type

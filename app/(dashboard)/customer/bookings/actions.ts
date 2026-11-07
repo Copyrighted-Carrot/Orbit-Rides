@@ -16,5 +16,7 @@ export async function requestCancellation(_state: CancellationResult, form: Form
     const { error } = await client.rpc('request_cancellation', { p_booking_id: booking, p_request_id: request, p_reason: reason })
     if (error) return { error: 'Cancellation could not be requested. Reload its saved state; only confirmed or ready bookings before pickup are eligible.' }
     for (const path of ['/customer/bookings', '/admin/bookings', '/customer/notifications']) revalidatePath(path, 'layout')
+    revalidatePath(`/customer/bookings/${booking}`)
+    revalidatePath(`/admin/bookings/${booking}`)
     return { message: 'Cancellation requested. The reservation remains in place until the operator accepts it.' }
 }
