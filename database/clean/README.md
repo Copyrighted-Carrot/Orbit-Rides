@@ -23,8 +23,8 @@ Create fresh Auth accounts through the project's administrative Auth interface. 
 | Demo payment | Explicit `approve_demo_payment(session_id)`; decline/abandon commands are separate; no money transferred |
 | Confirmation | Customer-only `finalize_booking(session_id)` verifies the timely recorded payment event and returns the same booking on retry; admin visibility does not grant payment authority |
 | Receipt/history | Read-only `booking_receipt`, owner/admin bookings and append-only `booking_events` |
-| Cancellation | `request_cancellation`, followed by staff `decide_cancellation`; inventory remains held until acceptance |
-| Fulfillment | `mark_ready`, `pick_up`, `return_vehicle`, `start_inspection`, `finish_inspection` |
+| Cancellation | `request_cancellation`, followed by staff `decide_cancellation`; pre-pickup requests retain inventory until explicit acceptance |
+| Fulfillment | `mark_ready`, `pick_up`, `return_vehicle`, `start_inspection`, `finish_inspection`, then explicit `complete_booking` |
 | Notifications | Owner-scoped projection of canonical events; `mark_notification_read` does not change a booking |
 | Customer records | `set_wishlist`, `record_vehicle_view`, and `submit_review`; review identity comes from a completed rental |
 | Fleet | Admin commands create/edit/publish/archive; historical vehicle references are retained |
@@ -37,7 +37,7 @@ Reservations and maintenance share one exclusion constraint. Vehicle locks seria
 
 Successful demo approval is a simulation, not settlement. UI must say **Demo payment — no money will be transferred.** The payment provider registry and event boundary allow a future provider without client-controlled booking rules. Cancellation creates no refund. Profile summaries label only completed simulated value; no demo amount is revenue or cash collected.
 
-Failed return inspection keeps the rental under inspection and the vehicle in maintenance. Passing inspection completes it, subject to the actual-return turnaround. Staff notes and inspection photos remain staff-only. Late-return penalties, refunds, no-show rules and discount campaigns are not implemented.
+Ready is booking-specific. Pickup records the handover and active events together and makes the vehicle operationally occupied. Return makes it unavailable for inspection. Failed inspection keeps the rental under inspection and the vehicle in maintenance. Passing inspection records clearance; a separate idempotent `complete_booking` command completes the rental and releases its allocation. Actual-return turnaround, other reservations and maintenance still constrain availability. Staff notes, outcome reasons and inspection photos remain staff-only. Late-return penalties, refunds, no-show rules and discount campaigns are not implemented.
 
 
 The singleton pickup location is public read-only and editable through the admin-only `configure_pickup_location` command. New quotes require a configured location and snapshot its name, city and address; edits do not rewrite earlier quotes. The explicit portfolio seed uses **Orbit Rides — Coimbatore, Tamil Nadu, India**, with **Demo pickup location** as its virtual-location label; no street address is invented. This is a simulation, not a claim that a rental office exists. Earlier synthetic quotes retain their original lack of a location snapshot.
@@ -63,7 +63,7 @@ The lifecycle seed requires these fresh synthetic accounts: `operator@orbit-demo
 
 Examples cover completed, active, upcoming, cancelled and pending demo bookings, planned maintenance and a failed inspection. Reruns preserve references/history. A ten-minute checkout expires normally; `003_refresh_demo_checkout.sql` explicitly creates a fresh example while retaining expired attempts. It is not a production job.
 
-SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `checkout-integrity.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
+SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `checkout-integrity.sql`, `cancellation-circle.sql`, `fulfillment-circle.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. Cancellation/fulfillment tests cover authorized transitions, duplicate commands, event evidence, inventory reconciliation, staff privacy and completed demo value. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
 
 HTTP tests `auth-api.mjs`, `checkout-api.mjs`, `checkout-circle-api.mjs` and `media-api.mjs` receive JSON on stdin from an external secret store:
 
@@ -87,6 +87,16 @@ New quotes are immutable, including the virtual Coimbatore pickup and configured
 
 `/customer/checkout/[booking_id]` resumes the durable reservation. Its QR opens `/customer/payment/[session_id]`; this GET is read-only and requires the owning customer. Only the explicit approval action records the demo payment. Polling reads persisted state; it never approves or confirms. Expired pending sessions are reconciled through an explicit command, while discovery and new reservation commands already exclude/retire stale unpaid holds.
 
-Customer receipt/history, admin booking views and checkout use one shared canonical read model. Bounded version checks discard results assembled across a concurrent payment/lifecycle transition. Customer timelines read append-only booking events. The notification center persists read state and links to those same bookings. Admin booking screens expose viewing only in this milestone.
+Customer receipt/history, admin booking views and checkout use one shared canonical read model. Bounded version checks discard results assembled across a concurrent payment/lifecycle transition. Customer timelines read append-only booking events. The notification center persists read state and links to those same bookings. Admin viewing does not grant permission to approve a customer's payment.
 
-The old automatic QR approval endpoint and render-time booking creation are removed. Legacy routes redirect to canonical records or history; URL prices and serialized vehicle objects cannot create a reservation. Fulfillment/cancellation screens, optional customer-record features and the broader rehabilitation remain separate milestones.
+The old automatic QR approval endpoint and render-time booking creation are removed. Legacy routes redirect to canonical records or history; URL prices and serialized vehicle objects cannot create a reservation. Optional customer-record features and the broader rehabilitation remain separate milestones.
+
+## Cancellation and operations
+
+Customer booking details accept a reasoned cancellation request only while confirmed or ready. A pending request blocks pickup but retains the reservation. Admin acceptance or rejection records one canonical outcome event and notification in the same transaction. Equivalent pending requests and identical decision retries reuse the saved result; conflicting decisions fail. Accepted cancellation preserves successful demo payment history without creating a refund.
+
+Admin booking details expose commands for the current stage, bounded inspection/media reads, private handover records, inspection clearance and explicit completion. Server actions verify the current account and trusted admin role; database commands recheck authorization and state under vehicle/booking locks. Customer and admin timelines read the same event records, including previous/new state and booking reference for newly recorded events. Earlier events are not assigned invented transition snapshots.
+
+Successful operational and cancellation submissions load the canonical booking page. Failed submissions retain their entered details; interrupted responses provide a saved-booking reload path before retry. The browser never optimistically assigns a lifecycle state.
+
+Pickup records condition, mileage, fuel/charge, damage and staff notes. Return cannot reduce mileage. Inspection media uses its own private bucket and retained associations; gallery cleanup cannot delete attached evidence. Interrupted uploads remain visible for validation retry or explicit cleanup. Query failures surface as errors with a reload path, never as fabricated empty inspection history.
