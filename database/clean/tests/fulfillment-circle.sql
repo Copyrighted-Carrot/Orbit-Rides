@@ -1,0 +1,76 @@
+-- Disposable clean staging only. Every fixture and clock replacement rolls back.
+BEGIN;
+CREATE OR REPLACE FUNCTION private.rental_now() RETURNS timestamptz LANGUAGE sql VOLATILE SET search_path='' AS $$
+ SELECT current_setting('orbit.fulfillment_test_time')::timestamptz $$;
+CREATE FUNCTION pg_temp.check_lifecycle(ok boolean,message text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION '%',message; END IF; END $$;
+CREATE FUNCTION pg_temp.deny_lifecycle(statement text,code text) RETURNS void LANGUAGE plpgsql AS $$
+DECLARE actual text;
+BEGIN BEGIN EXECUTE statement; EXCEPTION WHEN OTHERS THEN GET STACKED DIAGNOSTICS actual=RETURNED_SQLSTATE; END;
+ IF actual IS DISTINCT FROM code THEN RAISE EXCEPTION 'Expected %, received %',code,actual; END IF; END $$;
+DO $test$
+DECLARE a uuid; c uuid; other uuid; v uuid; q uuid; b uuid; s uuid; i uuid; r uuid; t timestamptz:=clock_timestamp(); value_before bigint; reference text;
+BEGIN
+ SELECT id INTO STRICT a FROM auth.users WHERE email='operator@orbit-demo.example.invalid';
+ SELECT id INTO STRICT c FROM auth.users WHERE email='customer-a@orbit-demo.example.invalid';
+ SELECT id INTO STRICT other FROM auth.users WHERE email='customer-b@orbit-demo.example.invalid';
+ PERFORM set_config('orbit.fulfillment_test_time',(t-interval '1 day')::text,true);
+ PERFORM set_config('request.jwt.claim.sub',a::text,true);
+ v:=public.create_vehicle('OPS-'||left(gen_random_uuid()::text,8),(SELECT id FROM public.vehicle_types LIMIT 1),'Lifecycle','Fixture',12345);
+ PERFORM public.set_vehicle_publication(v,true);
+ PERFORM set_config('request.jwt.claim.sub',c::text,true);
+ SELECT completed_demo_rental_value_minor INTO value_before FROM public.my_rental_summary();
+ q:=public.create_quote(v,t-interval '10 minutes',t+interval '1 day',gen_random_uuid());b:=public.start_checkout(q);
+ SELECT id INTO STRICT s FROM public.payment_sessions WHERE booking_id=b;
+ PERFORM public.approve_demo_payment(s);PERFORM public.finalize_booking(s);
+ SELECT b2.reference INTO reference FROM public.bookings b2 WHERE id=b;
+ PERFORM set_config('orbit.fulfillment_test_time',t::text,true);
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.mark_ready(%L)',b),'42501');
+ PERFORM set_config('request.jwt.claim.sub',a::text,true);
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.pick_up(%L,%L,80,1000)',b,'Good'),'55000');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.complete_booking(%L)',b),'55000');
+ PERFORM public.mark_ready(b);PERFORM public.mark_ready(b);
+ PERFORM pg_temp.check_lifecycle((SELECT operational_state FROM public.vehicles WHERE id=v)='available','Ready incorrectly occupies the whole vehicle');
+ PERFORM set_config('request.jwt.claim.sub',c::text,true);
+ r:=public.request_cancellation(b,'Before handover',gen_random_uuid());
+ PERFORM set_config('request.jwt.claim.sub',a::text,true);
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.pick_up(%L,%L,80,1000)',b,'Good'),'55000');
+ PERFORM public.decide_cancellation(r,false,'Proceed with demo pickup');
+ i:=public.pick_up(b,'Good',80,1000,'Existing scratch','PRIVATE pickup notes');
+ PERFORM pg_temp.check_lifecycle(public.pick_up(b,'Good',80,1000,'Existing scratch','PRIVATE pickup notes')=i,'Pickup retry changed record');
+ PERFORM pg_temp.check_lifecycle((SELECT operational_state FROM public.vehicles WHERE id=v)='occupied','Pickup did not occupy vehicle');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.available_vehicles(t+interval '3 days',t+interval '4 days') WHERE vehicle_id=v),'Occupied vehicle appeared eligible');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.mark_ready(%L)',b),'55000');
+ PERFORM set_config('request.jwt.claim.sub',c::text,true);
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.request_cancellation(%L,%L,%L)',b,'After pickup',gen_random_uuid()),'55000');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.return_vehicle(%L,%L,50,1100)',b,'Returned'),'42501');
+ PERFORM set_config('request.jwt.claim.sub',a::text,true);
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.return_vehicle(%L,%L,50,999)',b,'Returned'),'22023');
+ i:=public.return_vehicle(b,'Returned',50,1100,'New scratch','PRIVATE return notes');
+ PERFORM pg_temp.check_lifecycle(public.return_vehicle(b,'Returned',50,1100,'New scratch','PRIVATE return notes')=i,'Return retry changed record');
+ PERFORM pg_temp.check_lifecycle((SELECT operational_state FROM public.vehicles WHERE id=v)='inspection','Return released vehicle');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.complete_booking(%L)',b),'55000');
+ PERFORM public.start_inspection(b);PERFORM public.start_inspection(b);
+ PERFORM public.finish_inspection(b,false,'PRIVATE repair required');PERFORM public.finish_inspection(b,false,'PRIVATE repair required');
+ PERFORM pg_temp.check_lifecycle((SELECT operational_state FROM public.vehicles WHERE id=v)='maintenance','Failed inspection released vehicle');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.complete_booking(%L)',b),'55000');
+ PERFORM public.finish_inspection(b,true,'PRIVATE repair checked');PERFORM public.finish_inspection(b,true,'PRIVATE repair checked');
+ PERFORM pg_temp.check_lifecycle((SELECT state FROM public.bookings WHERE id=b)='inspection','Inspection silently completed booking');
+ PERFORM pg_temp.check_lifecycle(public.complete_booking(b)=b AND public.complete_booking(b)=b,'Completion retry changed identity');
+ PERFORM pg_temp.check_lifecycle((SELECT operational_state FROM public.vehicles WHERE id=v)='available','Clear completion did not release vehicle');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.available_vehicles(t+interval '30 minutes',t+interval '1 hour') WHERE vehicle_id=v),'Actual return turnaround skipped');
+ PERFORM pg_temp.check_lifecycle(EXISTS(SELECT FROM public.available_vehicles(t+interval '3 hours',t+interval '4 hours') WHERE vehicle_id=v),'Cleared interval remains blocked');
+ PERFORM pg_temp.deny_lifecycle(format('SELECT public.pick_up(%L,%L,80,1000,%L,%L)',b,'Good','Existing scratch','PRIVATE pickup notes'),'55000');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.booking_events WHERE booking_id=b AND reason LIKE '%PRIVATE%'),'Staff notes leaked into timeline');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT event_type FROM public.booking_events WHERE booking_id=b AND event_type IN('ready','picked_up','active','returned','inspection_started','inspection_failed','inspection_completed','completed') GROUP BY event_type HAVING count(*)<>1),'Duplicate transition event');
+ PERFORM pg_temp.check_lifecycle((SELECT count(*) FROM public.booking_events WHERE booking_id=b AND event_type IN('ready','picked_up','active','returned','inspection_started','inspection_failed','inspection_completed','completed'))=8,'Lifecycle event missing');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.booking_events WHERE booking_id=b AND (booking_reference IS DISTINCT FROM reference OR new_state IS NULL)),'Event snapshots missing');
+ PERFORM set_config('request.jwt.claim.sub',c::text,true);
+ PERFORM pg_temp.check_lifecycle((SELECT completed_demo_rental_value_minor FROM public.my_rental_summary())=value_before+(SELECT total_minor FROM public.quotes WHERE id=q),'Completed demo profile total incorrect');
+ EXECUTE 'SET LOCAL ROLE authenticated';
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.inspections WHERE booking_id=b),'Customer read staff inspection');
+ PERFORM pg_temp.check_lifecycle(NOT EXISTS(SELECT FROM public.inspection_outcomes WHERE inspection_id=i),'Customer read private result');
+ EXECUTE 'RESET ROLE';
+ RAISE NOTICE 'Fulfillment circle SQL passed: explicit commands, protected records, retries, invalid transitions, occupied/inspection/maintenance, completion, turnaround, events and profile value.';
+END $test$;
+ROLLBACK;

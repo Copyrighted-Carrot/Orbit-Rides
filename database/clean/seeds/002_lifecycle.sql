@@ -70,6 +70,7 @@ BEGIN
     PERFORM set_config('orbit.fixture_time',(ends+interval '10 minutes')::text,true);
     PERFORM public.finish_inspection(booking,item.target_state='completed',
      CASE WHEN item.target_state='completed' THEN 'Synthetic checks passed' ELSE 'Synthetic tyre check requires staff attention' END);
+    IF item.target_state='completed' THEN PERFORM public.complete_booking(booking); END IF;
    END IF;
   END IF;
   IF (SELECT state FROM public.bookings WHERE id=booking)<>item.target_state THEN

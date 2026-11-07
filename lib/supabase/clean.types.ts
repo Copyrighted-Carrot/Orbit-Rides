@@ -827,6 +827,7 @@ export type Database = {
           vehicle_label: string
         }[]
       }
+      complete_booking: { Args: { p_booking_id: string }; Returns: string }
       configure_pickup_location: {
         Args: { p_address: string; p_city: string; p_name: string }
         Returns: undefined

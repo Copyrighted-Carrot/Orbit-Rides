@@ -91,7 +91,8 @@ BEGIN
  image:=public.prepare_inspection_media(return_inspection,'image/png',100);
  PERFORM pg_temp.expect_failure(format('SELECT public.attach_inspection_media(%L)',image.id),'55000');
  PERFORM public.discard_inspection_upload(image.id);
- IF public.finish_inspection(booking,true,'Tyre corrected and checks passed')<>'completed' THEN RAISE EXCEPTION 'Passed inspection failed to complete'; END IF;
+ IF public.finish_inspection(booking,true,'Tyre corrected and checks passed')<>'inspection' THEN RAISE EXCEPTION 'Inspection must await explicit completion'; END IF;
+ PERFORM public.complete_booking(booking);
  PERFORM public.finish_inspection(booking,true,'Tyre corrected and checks passed');
  IF EXISTS(SELECT FROM public.available_vehicles(end_at+interval '6 hours',end_at+interval '1 day') WHERE vehicle_id=vehicle) THEN RAISE EXCEPTION 'Actual-return turnaround ignored'; END IF;
  IF NOT EXISTS(SELECT FROM public.available_vehicles(end_at+interval '8 hours',end_at+interval '1 day') WHERE vehicle_id=vehicle) THEN RAISE EXCEPTION 'Completed vehicle unavailable after turnaround'; END IF;
