@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import BookingSummary from '@/app/components/BookingSummary'
 import BookingTimeline from '@/app/components/BookingTimeline'
+import CancellationPanel from '@/app/components/CancellationPanel'
 import { readBookingDetail, type SearchValues } from '@/lib/booking/history'
 import { formatRentalDate } from '@/lib/fleet/search'
 
@@ -15,6 +16,7 @@ export default async function AdminBookingDetail({ params, searchParams }: { par
         <h1 className="text-3xl font-bold">Booking overview</h1>
         {detail.confirmedAt && <p>Confirmed {formatRentalDate(detail.confirmedAt)} IST.</p>}
         <BookingSummary record={detail.record} showCustomer />
+        <CancellationPanel bookingId={detail.record.booking.id} state={detail.record.booking.state} userId={detail.userId} role="admin" requests={detail.cancellations} total={detail.cancellationCount} />
         <BookingTimeline events={detail.events} page={detail.eventPage} pages={detail.eventPages} total={detail.eventCount} basePath={`/admin/bookings/${detail.record.booking.id}`} />
     </div>
 }

@@ -18,7 +18,7 @@ const PAGE_SIZE = 12
 const EVENT_PAGE_SIZE = 30
 const quoteColumns = '*' as const
 const paymentColumns = '*' as const
-const eventColumns = 'id,booking_id,event_type,actor_kind,actor_id,reason,occurred_at' as const
+const eventColumns = 'id,booking_id,event_type,actor_kind,actor_id,reason,occurred_at,previous_state,new_state,booking_reference' as const
 const bookingColumns = 'id,reference,quote_id,vehicle_id,customer_id,state,hold_expires_at,created_at,updated_at' as const
 
 export function stateLabel(state: string) {
@@ -27,7 +27,7 @@ export function stateLabel(state: string) {
 }
 
 export function eventLabel(event: string) {
-    const labels: Record<string, string> = { hold_created: 'Reservation hold created', payment_pending: 'Demo payment pending', payment_succeeded: 'Demo payment approved', payment_failed: 'Demo payment failed', payment_expired: 'Demo payment expired', payment_cancelled: 'Demo payment cancelled', confirmed: 'Booking confirmed', ready: 'Vehicle ready', picked_up: 'Vehicle picked up', active: 'Rental active', returned: 'Vehicle returned', inspection_started: 'Inspection started', inspection_completed: 'Inspection completed', completed: 'Rental completed', cancel_requested: 'Cancellation requested', cancel_rejected: 'Cancellation rejected', cancellation_rejected: 'Cancellation rejected', cancelled: 'Booking cancelled', hold_expired: 'Reservation hold expired' }
+    const labels: Record<string, string> = { hold_created: 'Reservation hold created', payment_pending: 'Demo payment pending', payment_succeeded: 'Demo payment approved', payment_failed: 'Demo payment failed', payment_expired: 'Demo payment expired', payment_cancelled: 'Demo payment cancelled', confirmed: 'Booking confirmed', ready: 'Vehicle ready', picked_up: 'Vehicle picked up', active: 'Rental active', returned: 'Vehicle returned', inspection_started: 'Inspection started', inspection_completed: 'Inspection completed', completed: 'Rental completed', cancel_requested: 'Cancellation requested', cancel_rejected: 'Cancellation rejected', cancellation_rejected: 'Cancellation rejected', cancellation_accepted: 'Cancellation accepted', inspection_failed: 'Inspection requires attention', cancelled: 'Booking cancelled', hold_expired: 'Reservation hold expired' }
     return labels[event] || event.replaceAll('_', ' ')
 }
 
@@ -104,13 +104,14 @@ export async function readBookingDetail(role: 'customer' | 'admin', bookingId: s
         if (error) throw new Error('This booking could not be loaded. Please retry.')
         if (!booking) notFound()
         const page = pageValue(timelinePage)
-        const [records, events, confirmation] = await Promise.all([
+        const [records, events, confirmation, cancellations] = await Promise.all([
             hydrateBookings(client, [booking]),
             client.from('booking_events').select(eventColumns, { count: 'exact' }).eq('booking_id', booking.id).order('id').range((page - 1) * EVENT_PAGE_SIZE, page * EVENT_PAGE_SIZE - 1),
             client.from('booking_events').select('occurred_at').eq('booking_id', booking.id).eq('event_type', 'confirmed').maybeSingle(),
+            client.from('cancellation_requests').select('*', { count: 'exact' }).eq('booking_id', booking.id).order('requested_at', { ascending: false }).limit(20),
         ])
-        if (events.error || confirmation.error) throw new Error('The booking timeline could not be loaded. Please retry.')
-        return { bookings: [booking], value: { record: records[0], events: events.data, confirmedAt: confirmation.data?.occurred_at || null, eventPage: page, eventPages: Math.max(1, Math.ceil((events.count || 0) / EVENT_PAGE_SIZE)), eventCount: events.count || 0 } }
+        if (events.error || confirmation.error || cancellations.error) throw new Error('The booking timeline could not be loaded. Please retry.')
+        return { bookings: [booking], value: { userId: user.id, cancellations: cancellations.data, cancellationCount: cancellations.count || 0, record: records[0], events: events.data, confirmedAt: confirmation.data?.occurred_at || null, eventPage: page, eventPages: Math.max(1, Math.ceil((events.count || 0) / EVENT_PAGE_SIZE)), eventCount: events.count || 0 } }
     }, ids => bookingVersions(client, ids, role === 'customer' ? user.id : undefined))
 }
 

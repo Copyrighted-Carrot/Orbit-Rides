@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import BookingSummary from '@/app/components/BookingSummary'
 import BookingTimeline from '@/app/components/BookingTimeline'
+import CancellationPanel from '@/app/components/CancellationPanel'
 import { readBookingDetail, type SearchValues } from '@/lib/booking/history'
 import { formatRentalDate } from '@/lib/fleet/search'
 
@@ -17,6 +18,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
         {detail.confirmedAt && <p>Confirmed {formatRentalDate(detail.confirmedAt)} IST. This receipt records a simulated payment.</p>}
         <BookingSummary record={detail.record} showCustomer />
         {['held', 'awaiting_confirmation'].includes(booking.state) && <Link className="btn btn-primary" href={`/customer/checkout/${booking.id}`}>Resume checkout</Link>}
+        <CancellationPanel bookingId={detail.record.booking.id} state={detail.record.booking.state} userId={detail.userId} role="customer" requests={detail.cancellations} total={detail.cancellationCount} />
         <BookingTimeline events={detail.events} page={detail.eventPage} pages={detail.eventPages} total={detail.eventCount} basePath={`/customer/bookings/${booking.id}`} />
         <Link className="link" href="/customer/notifications">View notifications</Link>
     </div>

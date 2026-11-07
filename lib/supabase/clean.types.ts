@@ -19,27 +19,36 @@ export type Database = {
           actor_id: string | null
           actor_kind: string
           booking_id: string
+          booking_reference: string | null
           event_type: string
           id: number
+          new_state: string | null
           occurred_at: string
+          previous_state: string | null
           reason: string
         }
         Insert: {
           actor_id?: string | null
           actor_kind: string
           booking_id: string
+          booking_reference?: string | null
           event_type: string
           id?: never
+          new_state?: string | null
           occurred_at: string
+          previous_state?: string | null
           reason: string
         }
         Update: {
           actor_id?: string | null
           actor_kind?: string
           booking_id?: string
+          booking_reference?: string | null
           event_type?: string
           id?: never
+          new_state?: string | null
           occurred_at?: string
+          previous_state?: string | null
           reason?: string
         }
         Relationships: [

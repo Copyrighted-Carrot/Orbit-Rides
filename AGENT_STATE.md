@@ -4,7 +4,7 @@
 
 The approved direction is controlled reconstruction in a separate Supabase staging project. Rental is an untouched historical archive; its database and separate Storage recovery copies remain outside Git. Production Auth credentials, customer identities, legacy bookings and legacy payment sessions must not be imported into staging. The exact-production-restore gate has been replaced by a reproducible clean foundation with synthetic accounts and demo scenarios.
 
-Current branch: `reconstruction/checkout-circle`. The permitted Git author and committer remain `Copyrighted-Carrot <belindosamson@gmail.com>` only.
+Current branch: `reconstruction/cancellation-fulfillment`, based on accepted checkout commit `bfc3a64`. The permitted Git author and committer remain `Copyrighted-Carrot <belindosamson@gmail.com>` only.
 
 Runtime stabilization is verified with Node 24.22.2 / npm 11.19.1, Next 15.5.29 and React 19.2.9. A separate fresh installation passed `npm ci`, dependency resolution, lint, typecheck and production build. Production dependencies have no reported vulnerabilities at this checkpoint; the full audit retains six moderate development-tool advisories and no high/critical advisories. The required compatibility edits do not rehabilitate the legacy booking UI.
 
@@ -38,7 +38,7 @@ The browser-confirmed booking `ORB-2f71f39619754964a0f11d437f8cdf67` has four ca
 
 The checkout changes are split into `e23bca5` (database integrity and regression tooling) and `62e4cd0` (checkout and dependent application views), on the topic branch above. Both commits use only the permitted owner identity. No recovery fixture scripts, credentials, dumps or AI working files are included.
 
-Stop at this verified checkout boundary. Fulfillment, cancellation, inspection, optional customer records, remaining truthful operational dashboards and broader accessibility/performance verification are separate milestones. No major visual redesign has begun; the entire rehabilitation is not claimed complete.
+Checkout is accepted. The owner authorized the next cancellation and fulfillment/pickup/return/inspection/completion circle on the branch above. Cancellation SQL and checkout regression pass. The staging browser journey verified request, rejection, repeat request, acceptance, refresh, preserved payment history, two decision notifications and a competing reservation using the released interval. Parallel equivalent requests returned one canonical request. A targeted authenticated check rejected cancellation by the actual owner after pickup. The first browser harness assumed the active fixture belonged to customer A; it belonged to customer B, so that final assertion was corrected and verified separately. New events snapshot previous/new state and reference; historical events remain unchanged. Fulfillment command tests now pass in rollback transactions; the fulfillment migration is not yet applied. Optional customer records, remaining operational dashboards and broader accessibility/performance verification remain separate milestones. No major visual redesign has begun; the entire rehabilitation is not claimed complete.
 
 Each retained feature must have one authoritative state source, an authorized command boundary, a canonical read path, retry/failure semantics, and consistent dependent views. Pricing uses started 24-hour periods, a configurable ten-minute hold and two-hour turnaround. Payment is explicitly a demo simulation; scan/read operations are not payment evidence. Financial penalties, refunds and no-show rules remain undecided.
 
