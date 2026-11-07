@@ -62,7 +62,7 @@ export default function NavBar({position = "sticky", role = ''}: {
                             </span>
                         )}
                     </button>
-                    <NotificationCenter />
+                    {role === 'customer' && <NotificationCenter />}
                     <ThemeSwitcher/>
                     <UserProfile/>
                 </div>

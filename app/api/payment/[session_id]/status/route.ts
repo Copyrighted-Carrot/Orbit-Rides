@@ -1,88 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server'
+import { getAccount } from '@/lib/auth/account'
+import { readOwnedPayment } from '@/lib/booking/checkout'
+import { validVehicleId } from '@/lib/fleet/search'
 
-// GET /api/payment/[session_id]/status
-// Public endpoint — no auth required. Session UUID is the secret.
-export async function GET(
-    _request: NextRequest,
-    { params }: { params: Promise<{ session_id: string }> }
-) {
-    const { session_id } = await params;
-    
-    if (!session_id) {
-        return NextResponse.json({ error: 'Missing session_id' }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-    
-    const { data, error } = await supabase
-        .from('payment_sessions')
-        .select('id, status, amount, confirmed_at, booking_data')
-        .eq('id', session_id)
-        .single();
-
-    if (error || !data) {
-        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ 
-        id: data.id,
-        status: data.status, 
-        amount: data.amount,
-        confirmed_at: data.confirmed_at 
-    });
-}
-
-// POST /api/payment/[session_id]/status
-// Confirms a payment session — called by the phone confirmation page
-export async function POST(
-    _request: NextRequest,
-    { params }: { params: Promise<{ session_id: string }> }
-) {
-    const { session_id } = await params;
-    
-    if (!session_id) {
-        return NextResponse.json({ error: 'Missing session_id' }, { status: 400 });
-    }
-
-    const supabase = await createClient();
-    
-    // First check if session exists and is pending
-    const { data: session } = await supabase
-        .from('payment_sessions')
-        .select('*')
-        .eq('id', session_id)
-        .single();
-
-    if (!session) {
-        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-    }
-
-    if (session.status === 'confirmed') {
-        return NextResponse.json({ status: 'already_confirmed', message: 'Payment was already confirmed' });
-    }
-
-    if (session.status === 'expired' || session.status === 'cancelled') {
-        return NextResponse.json({ error: 'Session is no longer valid' }, { status: 410 });
-    }
-
-    // Update to confirmed
-    const { error } = await supabase
-        .from('payment_sessions')
-        .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
-        .eq('id', session_id);
-
-    if (error) {
-        return NextResponse.json({ error: 'Failed to confirm payment' }, { status: 500 });
-    }
-
-    // Return booking data for the confirmation page
-    const bd = session.booking_data as Record<string, Record<string, string>> | null;
-    const carName = bd?.car ? `${bd.car.manufacturer} ${bd.car.model}` : 'Your Vehicle';
-
-    return NextResponse.json({ 
-        status: 'confirmed', 
-        carName,
-        amount: session.amount 
-    });
+export const dynamic = 'force-dynamic'
+export async function GET(_request: Request, { params }: { params: Promise<{ session_id: string }> }) {
+    const account = await getAccount()
+    const options = { headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' } }
+    if (!account) return NextResponse.json({ error: 'Sign in required.' }, { ...options, status: 401 })
+    if (account.role !== 'customer') return NextResponse.json({ error: 'Customer access required.' }, { ...options, status: 403 })
+    const { session_id } = await params
+    if (!validVehicleId(session_id)) return NextResponse.json({ error: 'Invalid session reference.' }, { ...options, status: 400 })
+    try {
+        const record = await readOwnedPayment(account.user.id, session_id)
+        if (!record) return NextResponse.json({ error: 'Session unavailable.' }, { ...options, status: 404 })
+        return NextResponse.json(record, options)
+    } catch { return NextResponse.json({ error: 'Payment status unavailable. Please retry.' }, { ...options, status: 503 }) }
 }

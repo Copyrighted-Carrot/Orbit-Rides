@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import Link from "next/link";
 import {ReactNode} from "react";
 import {FaCalendar, FaCar, FaCoins, FaGear} from "react-icons/fa6";
@@ -40,7 +40,7 @@ function CustomerNavBarItems({isSideBarItems}: { isSideBarItems: boolean })
         <>
             <li><NavBarLink href={'/customer/bookings'} isSideBarItem={isSideBarItems}>
                 {isSideBarItems && <FaCalendar/>}
-                Bookings</NavBarLink></li>
+                Bookings</NavBarLink></li><li><NavBarLink href="/customer/notifications" isSideBarItem={isSideBarItems}>Notifications</NavBarLink></li>
         </>
     );
 }

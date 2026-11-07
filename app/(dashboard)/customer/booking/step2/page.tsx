@@ -1,13 +1,7 @@
-import { redirect } from 'next/navigation';
-import QRCheckoutContent from './QRCheckoutContent';
+import { redirect } from 'next/navigation'
+import { validVehicleId } from '@/lib/fleet/search'
 
-export const metadata = {
-    title: 'Complete Payment | Orbit Rides',
-    description: 'Scan the QR code to complete your booking payment.',
-};
-
-export default async function BookingStep2({ searchParams }: { searchParams: Promise<{ car: string; rentDate: string; deliveryLocation: string }> }) {
-    const { car: carJSON, rentDate: rentDateJSON, deliveryLocation: deliveryLocationJSON } = await searchParams;
-    if (!carJSON || !rentDateJSON || !deliveryLocationJSON) redirect('/customer/');
-    return <QRCheckoutContent carJSON={carJSON} rentDateJSON={rentDateJSON} deliveryLocationJSON={deliveryLocationJSON} />;
+export default async function LegacyCheckout({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+    const { quote_id } = await searchParams
+    redirect(typeof quote_id === 'string' && validVehicleId(quote_id) ? `/customer/booking/quote/${quote_id}` : '/customer/bookings')
 }
