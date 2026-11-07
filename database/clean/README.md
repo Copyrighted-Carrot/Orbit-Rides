@@ -18,10 +18,10 @@ Create fresh Auth accounts through the project's administrative Auth interface. 
 | --- | --- |
 | Identity | Supabase Auth; trusted `user_roles`; editable `user_profiles` through `update_my_profile` |
 | Discovery | `search_fleet` filters and paginates canonical vehicles; dated searches delegate to `available_vehicles(start,end)` using reservation/maintenance allocations |
-| Quote | `create_quote(vehicle,start,end,request_id)`; server snapshots price, customer, vehicle and configured pickup location |
+| Quote | `create_quote(vehicle,start,end,request_id)`; server snapshots price, customer, vehicle, configured pickup location and hold duration |
 | Checkout | `start_checkout(quote_id)` returns one stable booking; its payment session is owner-scoped |
 | Demo payment | Explicit `approve_demo_payment(session_id)`; decline/abandon commands are separate; no money transferred |
-| Confirmation | `finalize_booking(session_id)` verifies the recorded payment event and returns the same booking on retry |
+| Confirmation | Customer-only `finalize_booking(session_id)` verifies the timely recorded payment event and returns the same booking on retry; admin visibility does not grant payment authority |
 | Receipt/history | Read-only `booking_receipt`, owner/admin bookings and append-only `booking_events` |
 | Cancellation | `request_cancellation`, followed by staff `decide_cancellation`; inventory remains held until acceptance |
 | Fulfillment | `mark_ready`, `pick_up`, `return_vehicle`, `start_inspection`, `finish_inspection` |
@@ -40,7 +40,7 @@ Successful demo approval is a simulation, not settlement. UI must say **Demo pay
 Failed return inspection keeps the rental under inspection and the vehicle in maintenance. Passing inspection completes it, subject to the actual-return turnaround. Staff notes and inspection photos remain staff-only. Late-return penalties, refunds, no-show rules and discount campaigns are not implemented.
 
 
-The singleton pickup location is public read-only and editable through the admin-only `configure_pickup_location` command. New quotes require a configured location and snapshot its name, city and address; edits do not rewrite earlier quotes. The explicit portfolio seed uses **Demo pickup, Coimbatore, Tamil Nadu, India**, with **Virtual demo location - no physical pickup.** This is a simulation, not a claim that a rental office exists. Earlier synthetic quotes retain their original lack of a location snapshot.
+The singleton pickup location is public read-only and editable through the admin-only `configure_pickup_location` command. New quotes require a configured location and snapshot its name, city and address; edits do not rewrite earlier quotes. The explicit portfolio seed uses **Orbit Rides — Coimbatore, Tamil Nadu, India**, with **Demo pickup location** as its virtual-location label; no street address is invented. This is a simulation, not a claim that a rental office exists. Earlier synthetic quotes retain their original lack of a location snapshot.
 
 Search accepts paired future timestamps, optional type/text/maximum daily rate and bounded pagination (up to 24 records per page). All filters apply before the count and pagination. Missing/archived UUIDs do not load a vehicle. Customer links carry scalar filters and a canonical UUID, never serialized vehicle or price objects. A query failure must show an error with retry, not an empty inventory result.
 
@@ -63,15 +63,15 @@ The lifecycle seed requires these fresh synthetic accounts: `operator@orbit-demo
 
 Examples cover completed, active, upcoming, cancelled and pending demo bookings, planned maintenance and a failed inspection. Reruns preserve references/history. A ten-minute checkout expires normally; `003_refresh_demo_checkout.sql` explicitly creates a fresh example while retaining expired attempts. It is not a production job.
 
-SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
+SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `checkout-integrity.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
 
-HTTP tests `auth-api.mjs`, `checkout-api.mjs` and `media-api.mjs` receive JSON on stdin from an external secret store:
+HTTP tests `auth-api.mjs`, `checkout-api.mjs`, `checkout-circle-api.mjs` and `media-api.mjs` receive JSON on stdin from an external secret store:
 
 ```json
 {"project":"STAGING_REFERENCE","key":"PUBLISHABLE_KEY","accounts":[{"id":"FRESH_UUID","email":"SYNTHETIC_EMAIL","password":"FRESH_PASSWORD","role":"customer","display_name":"Demo Customer"}]}
 ```
 
-The current harness explicitly guards the approved staging reference and requires one admin plus two customers. Tokens/passwords must never be logged or passed in command arguments. Checkout/media tests leave completed or cancelled synthetic history and archive their dedicated media fixtures. They test actual Auth, REST and Storage; native database tests do not replace hosted API checks.
+The current harness explicitly guards the approved staging reference and requires one admin plus two customers. Tokens/passwords must never be logged or passed in command arguments. `checkout-circle-api.mjs` tests the checkout milestone without fulfillment or cancellation commands: forged inputs, owner boundaries, duplicate approval/finalization, event/notification consistency and simultaneous competing holds. It leaves synthetic confirmed history on an unpublished fixture vehicle. Checkout/media tests leave completed or cancelled synthetic history and archive their dedicated media fixtures. They test actual Auth, REST and Storage; native database tests do not replace hosted API checks.
 
 Validate the Edge Function separately from Next.js:
 
@@ -81,3 +81,12 @@ deno check --no-lock --node-modules-dir=none database/clean/functions/validate-m
 
 This foundation does not make the legacy application screens compatible with the new schema. Integrate each complete UI/API/data chain separately; a passing database test is not completion of its customer/admin feature.
 
+## Integrated checkout
+
+New quotes are immutable, including the virtual Coimbatore pickup and configured hold duration. Older synthetic quotes remain readable; request a fresh quote to start checkout if the duration snapshot is absent. A successful approval must be recorded before the hold deadline. It moves the existing reservation to `awaiting_confirmation` and retains its allocation while the customer explicitly confirms; a later confirmation retry does not create another booking or payment. No refund or settlement is implied.
+
+`/customer/checkout/[booking_id]` resumes the durable reservation. Its QR opens `/customer/payment/[session_id]`; this GET is read-only and requires the owning customer. Only the explicit approval action records the demo payment. Polling reads persisted state; it never approves or confirms. Expired pending sessions are reconciled through an explicit command, while discovery and new reservation commands already exclude/retire stale unpaid holds.
+
+Customer receipt/history, admin booking views and checkout use one shared canonical read model. Bounded version checks discard results assembled across a concurrent payment/lifecycle transition. Customer timelines read append-only booking events. The notification center persists read state and links to those same bookings. Admin booking screens expose viewing only in this milestone.
+
+The old automatic QR approval endpoint and render-time booking creation are removed. Legacy routes redirect to canonical records or history; URL prices and serialized vehicle objects cannot create a reservation. Fulfillment/cancellation screens, optional customer-record features and the broader rehabilitation remain separate milestones.
