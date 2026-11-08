@@ -878,6 +878,7 @@ export type Database = {
         Returns: undefined
       }
       mark_ready: { Args: { p_booking_id: string }; Returns: undefined }
+      my_activity_summary: { Args: never; Returns: Json }
       my_rental_summary: {
         Args: never
         Returns: {
@@ -886,6 +887,10 @@ export type Database = {
           confirmed_rentals: number
           currency: string
         }[]
+      }
+      my_vehicle_activity: {
+        Args: { p_kind: string; p_page?: number }
+        Returns: Json
       }
       pick_up: {
         Args: {
@@ -1036,6 +1041,18 @@ export type Database = {
           p_vehicle_type_id: string
         }
         Returns: undefined
+      }
+      vehicle_review_overview: {
+        Args: { p_limit?: number; p_offset?: number; p_vehicle_id: string }
+        Returns: Json
+      }
+      vehicle_review_summaries: {
+        Args: { p_vehicle_ids: string[] }
+        Returns: {
+          average_rating: number
+          review_count: number
+          vehicle_id: string
+        }[]
       }
       vehicle_review_summary: {
         Args: { p_vehicle_id: string }
