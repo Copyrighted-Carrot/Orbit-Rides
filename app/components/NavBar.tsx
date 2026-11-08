@@ -3,7 +3,8 @@ import {ThemeSwitcher} from "@/app/components/ThemeSwitcher";
 import UserProfile from "@/app/components/UserProfile";
 import LogoLink from "@/app/components/LogoLink";
 import NavBarItems from "@/app/components/NavBarItems";
-import { useWishlist } from "@/app/components/WishlistContext";
+import Link from 'next/link';
+import { useEffect } from 'react';
 import NotificationCenter from "@/app/components/NotificationCenter";
 import { FaHeart } from "react-icons/fa6";
 
@@ -12,7 +13,10 @@ export default function NavBar({position = "sticky", role = ''}: {
     role?: 'admin' | 'customer' | '',
 })
 {
-    const { wishlist, setIsDrawerOpen } = useWishlist();
+    useEffect(() => {
+        // Discard the obsolete shared-browser list; never import it as an account's saved state.
+        try { localStorage.removeItem('orbit_rides_wishlist'); } catch { /* Storage may be disabled. */ }
+    }, []);
 
     return (
         <div className={`top-3 px-3 z-[1100] w-full ${position}`}>
@@ -50,18 +54,12 @@ export default function NavBar({position = "sticky", role = ''}: {
                 </div>
 
                 <div className="navbar-end gap-2">
-                    <button
-                        onClick={() => setIsDrawerOpen(true)}
+                    {role === 'customer' && <Link href="/customer/activity?view=saved"
                         className="btn btn-ghost btn-circle btn-sm relative text-emerald-400 hover:bg-emerald-500/10"
-                        title="View Wishlist"
+                        aria-label="View wishlist"
                     >
                         <FaHeart className="w-4 h-4" />
-                        {wishlist.length > 0 && (
-                            <span className="badge badge-emerald badge-xs absolute -top-1 -right-1 font-bold">
-                                {wishlist.length}
-                            </span>
-                        )}
-                    </button>
+                    </Link>}
                     {role === 'customer' && <NotificationCenter />}
                     <ThemeSwitcher/>
                     <UserProfile/>

@@ -40,7 +40,7 @@ function CustomerNavBarItems({isSideBarItems}: { isSideBarItems: boolean })
         <>
             <li><NavBarLink href={'/customer/bookings'} isSideBarItem={isSideBarItems}>
                 {isSideBarItems && <FaCalendar/>}
-                Bookings</NavBarLink></li><li><NavBarLink href="/customer/notifications" isSideBarItem={isSideBarItems}>Notifications</NavBarLink></li>
+                Bookings</NavBarLink></li><li><NavBarLink href="/customer/notifications" isSideBarItem={isSideBarItems}>Notifications</NavBarLink></li><li><NavBarLink href="/customer/activity" isSideBarItem={isSideBarItems}>Activity</NavBarLink></li>
         </>
     );
 }

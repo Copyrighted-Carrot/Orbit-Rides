@@ -7,6 +7,7 @@ import InspectionMedia from '@/app/components/InspectionMedia'
 import { type SearchValues } from '@/lib/booking/history'
 import { readOperationalBooking } from '@/lib/booking/operations'
 import { formatRentalDate } from '@/lib/fleet/search'
+import BookingReview from '@/app/components/BookingReview'
 
 export const metadata = { title: 'Booking overview | Orbit Rides', robots: { index: false, follow: false } }
 
@@ -25,6 +26,7 @@ export default async function AdminBookingDetail({ params, searchParams }: { par
         <h1 className="text-3xl font-bold">Booking overview</h1>
         {detail.confirmedAt && <p>Confirmed {formatRentalDate(detail.confirmedAt)} IST.</p>}
         <BookingSummary record={detail.record} showCustomer />
+        <BookingReview bookingId={booking.id} state={booking.state} userId={detail.userId} role="admin" />
         <CancellationPanel bookingId={detail.record.booking.id} state={detail.record.booking.state} userId={detail.userId} role="admin" requests={detail.cancellations} total={detail.cancellationCount} />
         <section aria-label="Rental operations" className="space-y-4">
             <h2 className="text-xl font-semibold">Rental operations</h2>

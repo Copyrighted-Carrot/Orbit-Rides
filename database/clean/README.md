@@ -26,7 +26,7 @@ Create fresh Auth accounts through the project's administrative Auth interface. 
 | Cancellation | `request_cancellation`, followed by staff `decide_cancellation`; pre-pickup requests retain inventory until explicit acceptance |
 | Fulfillment | `mark_ready`, `pick_up`, `return_vehicle`, `start_inspection`, `finish_inspection`, then explicit `complete_booking` |
 | Notifications | Owner-scoped projection of canonical events; `mark_notification_read` does not change a booking |
-| Customer records | `set_wishlist`, `record_vehicle_view`, and `submit_review`; review identity comes from a completed rental |
+| Customer records | Owner-scoped `set_wishlist`, `record_vehicle_view`, `my_vehicle_activity` and `my_activity_summary`; `submit_review` derives identity from a completed rental |
 | Fleet | Admin commands create/edit/publish/archive; historical vehicle references are retained |
 
 Client table writes are revoked. Mutation functions validate the authenticated owner or trusted operator role and use pinned search paths. The SECURITY DEFINER advisor notices on these intentional command boundaries require review, not blanket removal of authorization logic. Public availability and review summaries reveal no other customer's booking identity.
@@ -63,7 +63,7 @@ The lifecycle seed requires these fresh synthetic accounts: `operator@orbit-demo
 
 Examples cover completed, active, upcoming, cancelled and pending demo bookings, planned maintenance and a failed inspection. Reruns preserve references/history. A ten-minute checkout expires normally; `003_refresh_demo_checkout.sql` explicitly creates a fresh example while retaining expired attempts. It is not a production job.
 
-SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `checkout-integrity.sql`, `cancellation-circle.sql`, `fulfillment-circle.sql`, `domain-regression.sql` and `customer-records.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. Cancellation/fulfillment tests cover authorized transitions, duplicate commands, event evidence, inventory reconciliation, staff privacy and completed demo value. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
+SQL tests `account-bootstrap.sql`, `fleet-discovery.sql`, `checkout-integrity.sql`, `cancellation-circle.sql`, `fulfillment-circle.sql`, `domain-regression.sql`, `customer-records.sql` and `saved-activity-reviews.sql` run as database owner in isolated staging and roll back. The lifecycle seed is a prerequisite for customer-records tests. The older customer-records test refuses a project containing non-fixture Auth users; do not remove that safeguard or delete real accounts to run it. The saved-activity/reviews test selects the three named synthetic accounts and creates its own disposable vehicles/completed rentals through domain commands. Cancellation/fulfillment tests cover authorized transitions, duplicate commands, event evidence, inventory reconciliation, staff privacy and completed demo value. `media-concurrency.mjs` exercises real competing transactions against a localhost PostgreSQL 17 fixture only; it requires PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSFILE and optionally PSQL_PATH.
 
 HTTP tests `auth-api.mjs`, `checkout-api.mjs`, `checkout-circle-api.mjs` and `media-api.mjs` receive JSON on stdin from an external secret store:
 
@@ -89,7 +89,7 @@ New quotes are immutable, including the virtual Coimbatore pickup and configured
 
 Customer receipt/history, admin booking views and checkout use one shared canonical read model. Bounded version checks discard results assembled across a concurrent payment/lifecycle transition. Customer timelines read append-only booking events. The notification center persists read state and links to those same bookings. Admin viewing does not grant permission to approve a customer's payment.
 
-The old automatic QR approval endpoint and render-time booking creation are removed. Legacy routes redirect to canonical records or history; URL prices and serialized vehicle objects cannot create a reservation. Optional customer-record features and the broader rehabilitation remain separate milestones.
+The old automatic QR approval endpoint and render-time booking creation are removed. Legacy routes redirect to canonical records or history; URL prices and serialized vehicle objects cannot create a reservation. The broader rehabilitation remains distinct from checkout completion.
 
 ## Cancellation and operations
 
@@ -100,3 +100,15 @@ Admin booking details expose commands for the current stage, bounded inspection/
 Successful operational and cancellation submissions load the canonical booking page. Failed submissions retain their entered details; interrupted responses provide a saved-booking reload path before retry. The browser never optimistically assigns a lifecycle state.
 
 Pickup records condition, mileage, fuel/charge, damage and staff notes. Return cannot reduce mileage. Inspection media uses its own private bucket and retained associations; gallery cleanup cannot delete attached evidence. Interrupted uploads remain visible for validation retry or explicit cleanup. Query failures surface as errors with a reload path, never as fabricated empty inspection history.
+
+## Saved activity, reviews and comparison
+
+Wishlist and recently viewed records contain only account/vehicle associations and timestamps. The browser's obsolete shared local-storage wishlist is discarded, never imported into an account. Add/remove commands are idempotent. Viewing an actual detail page sends an authenticated command after mount; GET rendering and link prefetch do not record a view. Repeated views update one row, and only the most recent twenty vehicles are retained.
+
+`my_vehicle_activity` reads at most twelve canonical vehicle associations per page for the authenticated customer. Archived/unpublished associations remain identifiable but expose no gallery path or new-booking link. An archived saved vehicle can still be removed. Fleet archival does not delete bookings, reviews or recently viewed associations.
+
+Only the owner of a completed booking can submit its one review. The command takes a booking reference, rating and comment, derives customer/vehicle from the booking, and serializes concurrent submissions on that booking. An identical retry returns success; a conflicting submission fails without changing the saved review. No general table writes, review editing or moderation authority are granted. Public review projections contain rating, comment and creation time without private customer/booking identifiers. Archived reviews remain visible to staff and customers with a completed rental of that vehicle.
+
+Customer activity/profile, completed booking details and admin booking details read the same stored reviews. Vehicle review lists and totals use one SQL snapshot; bounded batch summaries supply browse/comparison ratings. Comparison shows only current manufacturer, model, type, rate, operational condition, stored review aggregates and authoritative dated availability. It accepts two or three canonical vehicle IDs and rejects unavailable selections; no synthetic score or cost estimate is displayed.
+
+Failed submissions retain review input and offer a canonical reload path. Interrupted responses may be retried safely; successful submissions reload persisted state. Activity/review query failures produce errors rather than fabricated empty records. These feature checks do not resolve the separate Supabase leaked-password-protection advisory.

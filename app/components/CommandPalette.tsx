@@ -10,13 +10,11 @@ import {
     FaHouse, 
     FaCalendarCheck 
 } from 'react-icons/fa6';
-import { useWishlist } from './WishlistContext';
 
 export default function CommandPalette() {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState('');
     const router = useRouter();
-    const { setIsDrawerOpen } = useWishlist();
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -38,8 +36,8 @@ export default function CommandPalette() {
     const commands = [
         {
             id: 'cars',
-            title: 'Browse Luxury Fleet',
-            subtitle: 'Explore BMW, Porsche, Mercedes & Exotic Supercars',
+            title: 'Browse vehicles',
+            subtitle: 'Explore the published demo catalogue',
             icon: <FaCar className="text-emerald-400" />,
             action: () => {
                 router.push('/customer/cars');
@@ -49,10 +47,10 @@ export default function CommandPalette() {
         {
             id: 'wishlist',
             title: 'Open Saved Wishlist',
-            subtitle: 'View your favorited supercars and SUVs',
+            subtitle: 'View your saved vehicles',
             icon: <FaHeart className="text-emerald-400" />,
             action: () => {
-                setIsDrawerOpen(true);
+                router.push('/customer/activity?view=saved');
                 setIsOpen(false);
             },
         },

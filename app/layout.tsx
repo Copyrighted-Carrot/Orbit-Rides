@@ -66,8 +66,6 @@ export const metadata = {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://orbit-rides.vercel.app'),
 };
 
-import { WishlistProvider } from "@/app/components/WishlistContext";
-import WishlistDrawer from "@/app/components/WishlistDrawer";
 import CommandPalette from "@/app/components/CommandPalette";
 
 export default function RootLayout({children,}: Readonly<{ children: React.ReactNode; }>)
@@ -78,7 +76,6 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
         bg-gradient-to-r from-slate-50 to-gray-300
         dark:bg-none dark:bg-base-300`}>
         <ThemeProvider storageKey='orbit_rides_theme'>
-            <WishlistProvider>
                 <div className="drawer">
                     <input id="my-drawer-3" type="checkbox" className="drawer-toggle"/>
                     <div className="drawer-content flex flex-col">
@@ -87,12 +84,10 @@ export default function RootLayout({children,}: Readonly<{ children: React.React
                             <div className='flex flex-col min-h-screen'>{children}</div>
                         </LazyMotion>
                         <ToastContainer/>
-                        <WishlistDrawer />
                         <CommandPalette />
                     </div>
                     <SidebarDrawer/>
                 </div>
-            </WishlistProvider>
         </ThemeProvider>
         </body>
         </html>

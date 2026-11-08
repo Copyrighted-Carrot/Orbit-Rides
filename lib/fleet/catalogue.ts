@@ -2,8 +2,9 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import type { Database, Json } from '@/lib/supabase/clean.types'
 import { PAGE_SIZE, parseSearchParams, validVehicleId } from './search'
+import { readReviewRatings, type ReviewRating } from '@/lib/activity/reviews'
 
-export type FleetCard = {
+export type FleetCard = ReviewRating & {
     id: string; manufacturer: string; model: string; vehicle_type_id: string; type_name: string
     daily_rate_minor: number; currency: string; operational_state: string; cover_url: string | null
 }
@@ -14,7 +15,7 @@ function record(value: Json | undefined): value is { [key: string]: Json | undef
     return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-function parseCard(value: Json): Omit<FleetCard, 'cover_url'> & { cover_path: string | null } {
+function parseCard(value: Json): Omit<FleetCard, 'cover_url' | keyof ReviewRating> & { cover_path: string | null } {
     if (!record(value) || typeof value.id !== 'string' || !validVehicleId(value.id)
         || typeof value.manufacturer !== 'string' || typeof value.model !== 'string'
         || typeof value.vehicle_type_id !== 'string' || typeof value.type_name !== 'string'
@@ -39,11 +40,12 @@ export async function getCatalogue(search: ReturnType<typeof parseSearchParams>)
         throw new Error('The vehicle catalogue response was invalid.')
     }
     const cards = data.vehicles.map(parseCard)
+    const ratings = await readReviewRatings(cards.map(card => card.id))
     const paths = cards.flatMap(card => card.cover_path ? [card.cover_path] : [])
     const signed = paths.length ? await client.storage.from('fleet-gallery').createSignedUrls(paths, 600) : null
     const urls = new Map(signed?.data?.map(item => [item.path, item.signedUrl]) || [])
     return {
-        vehicles: cards.map(({ cover_path, ...card }): FleetCard => ({ ...card, cover_url: cover_path ? urls.get(cover_path) || null : null })),
+        vehicles: cards.map(({ cover_path, ...card }): FleetCard => ({ ...card, ...ratings.get(card.id)!, cover_url: cover_path ? urls.get(cover_path) || null : null })),
         total: data.total, page: search.filters.page, pageSize: PAGE_SIZE,
         mediaWarning: Boolean(signed?.error || signed?.data?.some(item => item.error)),
     }
@@ -81,7 +83,8 @@ export async function getVehicle(id: string) {
     const signed = media.length ? await client.storage.from('fleet-gallery').createSignedUrls(media.map(item => item.object_path), 600) : null
     const urls = new Map(signed?.data?.map(item => [item.path, item.signedUrl]) || [])
     const gallery: FleetMedia[] = media.map(item => ({ id: item.id, category: item.category, position: item.position, url: urls.get(item.object_path) || null }))
-    return { vehicle: { ...vehicle, type_name: type.name, cover_url: gallery.find(item => item.category === 'exterior')?.url || gallery[0]?.url || null } as FleetCard,
+    const ratings = await readReviewRatings([id])
+    return { vehicle: { ...vehicle, ...ratings.get(id)!, type_name: type.name, cover_url: gallery.find(item => item.category === 'exterior')?.url || gallery[0]?.url || null } as FleetCard,
         gallery, mediaWarning: Boolean(signed?.error || signed?.data?.some(item => item.error)) }
 }
 

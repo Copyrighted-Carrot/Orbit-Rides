@@ -31,7 +31,7 @@ export function BookingHistoryView({ result, role }: { result: Awaited<ReturnTyp
     return <div className="max-w-6xl mx-auto w-full px-4 md:px-8 py-10 space-y-6">
         <h1 className="text-3xl font-bold">{role === 'admin' ? 'Booking overview' : 'Booking history'}</h1>
         <p>Demo payment — no money will be transferred.</p>
-        <div className="flex flex-wrap gap-4">{role === 'customer' ? <><Link className="link" href="/customer/cars">Browse vehicles</Link><Link className="link" href="/customer/notifications">Notifications</Link></> : <Link className="link" href="/admin/cars">Manage fleet</Link>}</div>
+        <div className="flex flex-wrap gap-4">{role === 'customer' ? <><Link className="link" href="/customer/cars">Browse vehicles</Link><Link className="link" href="/customer/notifications">Notifications</Link><Link className="link" href="/customer/activity?view=reviews">My reviews</Link></> : <Link className="link" href="/admin/cars">Manage fleet</Link>}</div>
         <form action={base} method="get" className="flex flex-wrap items-end gap-4">
             <label className="form-control gap-1">Booking reference<input className="input input-bordered" type="search" name="q" maxLength={80} defaultValue={result.filters.q} placeholder="ORB-…" /></label>
             <label className="form-control gap-1">Booking state<select className="select select-bordered" name="state" aria-label="Booking state" defaultValue={result.filters.state}><option value="all">All states</option>{BOOKING_STATES.map(state => <option key={state} value={state}>{stateLabel(state)}</option>)}</select></label>
@@ -49,6 +49,7 @@ export function BookingHistoryView({ result, role }: { result: Awaited<ReturnTyp
                     <p>Pickup location: {pickup?.city || 'Not recorded on this earlier demo booking'}{pickup && <span className="block text-sm">Demo pickup location</span>}</p>
                     <p>Total demo rental value: {formatMoney(quote.total_minor!)}</p>
                     <p className="text-sm">Created {formatRentalDate(booking.created_at)} IST</p>
+                    {booking.state === 'completed' && <Link className="link" href={`${base}/${booking.id}#rental-review`}>{role === 'customer' ? 'View or submit rental review' : 'View rental review'}</Link>}
                     {['held', 'awaiting_confirmation'].includes(booking.state) && <p className="text-sm">Hold deadline: {formatRentalDate(booking.hold_expires_at)} IST. Resume checkout to verify its current state.</p>}
                     <div className="flex flex-wrap gap-3"><Link className="btn btn-outline" href={`${base}/${booking.id}`}>View booking and timeline</Link>{role === 'customer' && ['held', 'awaiting_confirmation'].includes(booking.state) && <Link className="btn btn-primary" href={`/customer/checkout/${booking.id}`}>Resume checkout</Link>}</div>
                 </article>

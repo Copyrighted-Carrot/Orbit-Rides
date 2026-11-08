@@ -4,6 +4,7 @@ import BookingTimeline from '@/app/components/BookingTimeline'
 import CancellationPanel from '@/app/components/CancellationPanel'
 import { readBookingDetail, type SearchValues } from '@/lib/booking/history'
 import { formatRentalDate } from '@/lib/fleet/search'
+import BookingReview from '@/app/components/BookingReview'
 
 export const metadata = { title: 'Booking receipt and timeline | Orbit Rides', robots: { index: false, follow: false } }
 
@@ -17,6 +18,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
         <h1 className="text-3xl font-bold">{detail.confirmedAt ? 'Demo rental receipt' : 'Booking details'}</h1>
         {detail.confirmedAt && <p>Confirmed {formatRentalDate(detail.confirmedAt)} IST. This receipt records a simulated payment.</p>}
         <BookingSummary record={detail.record} showCustomer />
+        <BookingReview bookingId={booking.id} state={booking.state} userId={detail.userId} role="customer" />
         {['held', 'awaiting_confirmation'].includes(booking.state) && <Link className="btn btn-primary" href={`/customer/checkout/${booking.id}`}>Resume checkout</Link>}
         <CancellationPanel bookingId={detail.record.booking.id} state={detail.record.booking.state} userId={detail.userId} role="customer" requests={detail.cancellations} total={detail.cancellationCount} />
         <BookingTimeline events={detail.events} page={detail.eventPage} pages={detail.eventPages} total={detail.eventCount} basePath={`/customer/bookings/${booking.id}`} />
